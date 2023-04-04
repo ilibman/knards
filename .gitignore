@@ -260,3 +260,6 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# MISC STUFF
+db.dump
