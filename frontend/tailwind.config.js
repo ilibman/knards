@@ -17,8 +17,8 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        code: ['Source Code Pro', 'mono'],
-        base: ['Source Sans Pro', 'sans'],
+        base: 'var(--font-base)',
+        code: 'var(--font-code)',
       }
     },
   },

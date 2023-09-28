@@ -10,23 +10,30 @@
     --color-green: #499167;
     --color-violet-light: #7e78d2;
     --color-violet-dark: #6f58c9;
+    --font-base: 'Source Sans Pro', sans-serif;
+    --font-code: 'Source Code Pro', mono;
   }
 }
 
 html,
 body {
   height: 100%;
-  
   background-color: var(--color-brown);
+
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--color-brown);
+  }
 }
 
 body {
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   color: var(--color-black);
-  font-family: 'Source Sans Pro', sans-serif;
+  font-family: var(--font-base);
 }
 
 h1,
@@ -35,6 +42,6 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Source Sans Pro', sans-serif;
+  font-family: var(--font-base);
   text-transform: uppercase;
 }
