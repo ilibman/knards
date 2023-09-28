@@ -129,6 +129,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+uwsgi_knards.ini
+backend/static
+
 # FRONTEND STUFF
 # Logs
 logs
