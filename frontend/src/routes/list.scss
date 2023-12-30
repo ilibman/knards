@@ -1,0 +1,40 @@
+.rs-input-group-addon {
+  height: 100%;
+}
+
+.rs-input,
+.rs-stack-item,
+.rs-picker-search-bar-input,
+.rs-checkbox-checker,
+.rs-picker-select-menu-item,
+.rs-picker-none {
+  font-size: 1.125rem !important;
+}
+
+.rs-tag {
+  .rs-tag-text {
+    font-size: 1rem !important;
+  }
+
+  .rs-btn-close {
+    top: 1px;
+  }
+}
+
+.rs-input-group.rs-input-group-inside
+.rs-input-group-btn > .rs-icon {
+  font-size: 18px;
+}
+
+.rs-picker-search-bar-search-icon {
+  top: 17px;
+  width: 16px;
+}
+
+.rs-radio-wrapper {
+  top: 12px;
+}
+
+.rs-radio-inline {
+  margin-right: 20px;
+}

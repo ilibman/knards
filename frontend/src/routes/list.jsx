@@ -184,7 +184,7 @@ export default function List() {
   return (
     <>
       <div id="series-picker" className="">
-        <label className="mx-3 font-base font-semibold">Series:</label>
+        <label className="mx-3 font-base font-semibold text-lg">Series:</label>
         <SelectPicker
           data={seriesPickerData}
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
@@ -192,7 +192,7 @@ export default function List() {
         />
       </div>
       <div id="tag-picker" className="">
-        <label className="mx-3 font-base font-semibold">Tags:</label>
+        <label className="mx-3 font-base font-semibold text-lg">Tags:</label>
         <TagPicker
           data={tagPickerData}
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px' }}
@@ -204,12 +204,12 @@ export default function List() {
           style={{ width: 'calc(100% - 20px)', margin: '0 10px' }}
           onChange={handleTagInclusionSettingChange}
         >
-          <Radio checked value="or">OR</Radio>
-          <Radio value="and">AND</Radio>
+          <Radio className="text-lg" checked value="or">OR</Radio>
+          <Radio className="text-lg" value="and">AND</Radio>
         </RadioGroup>
       </div>
       <div id="fulltext-search" className="">
-        <label className="mx-3 font-base font-semibold">Fulltext:</label>
+        <label className="mx-3 font-base font-semibold text-lg">Fulltext:</label>
         <InputGroup
           inside
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
@@ -241,7 +241,7 @@ export default function List() {
                 key={_.id}
                 to={`/edit/${_.id}`}
               >
-                <div className="flex font-semibold">
+                <div className="flex font-semibold text-lg">
                   <div className="px-2 border-r">{_.id}</div>
                   <div className="flex-1 flex flex-col px-2 border-r">
                     {
