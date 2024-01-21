@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 
 
 class CardSeries(models.Model):
@@ -6,6 +7,13 @@ class CardSeries(models.Model):
         max_length=100,
         blank=False,
         null=False
+    )
+    owner = models.ForeignKey(
+        get_user_model(),
+        blank=True,
+        null=True,
+        related_name='card_series',
+        on_delete=models.CASCADE
     )
 
     def __str__(self):
@@ -49,6 +57,13 @@ class Card(models.Model):
         default=0,
         blank=False,
         null=False
+    )
+    owner = models.ForeignKey(
+        get_user_model(),
+        blank=True,
+        null=True,
+        related_name='cards',
+        on_delete=models.CASCADE
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

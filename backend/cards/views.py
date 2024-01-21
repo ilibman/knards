@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
+from .permissions import IsOwnerOrReadOnly
 from .serializers import (
     CardSeriesSerializer,
     TagSerializer,
@@ -10,8 +11,15 @@ from .models import CardSeries, Tag, Card, CardPartial
 
 class CardSeriesViewSet(viewsets.ModelViewSet):
     serializer_class = CardSeriesSerializer
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly
+    ]
     queryset = CardSeries.objects.order_by('pk')
     lookup_field = 'pk'
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 class TagsViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
@@ -20,6 +28,10 @@ class TagsViewSet(viewsets.ModelViewSet):
     
 class CardsViewSet(viewsets.ModelViewSet):
     serializer_class = CardSerializer
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly
+    ]
     lookup_field = 'pk'
 
     def get_queryset(self):
@@ -40,7 +52,20 @@ class CardsViewSet(viewsets.ModelViewSet):
             
         return queryset.order_by('created_at')
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 class CardPartialsViewSet(viewsets.ModelViewSet):
     serializer_class = CardPartialSerializer
-    queryset = CardPartial.objects.order_by('position')
     lookup_field = 'pk'
+
+    def get_queryset(self):
+        card = self.request.query_params.get('card', None)
+
+        queryset = CardPartial.objects.all()
+        if card:
+            queryset = queryset.filter(
+                card=card
+            )
+            
+        return queryset.order_by('position')

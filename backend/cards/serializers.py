@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import CardSeries, Tag, Card, CardPartial
 
 class CardSeriesSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = CardSeries
         fields = '__all__'
@@ -14,6 +16,8 @@ class TagSerializer(serializers.ModelSerializer):
         lookup_field = 'id'
 
 class CardSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Card
         fields = '__all__'
