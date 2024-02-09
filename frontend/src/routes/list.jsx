@@ -40,7 +40,7 @@ export default function List() {
 
       try {
         const response = await api.get(
-          `cards/cards/${flattenedParams ? `?${flattenedParams}` : ''}`
+          `api/cards/cards/${flattenedParams ? `?${flattenedParams}` : ''}`
         );
         setCards(response.data);
       } catch (error) {
@@ -58,7 +58,7 @@ export default function List() {
   useEffect(() => {
     const fetchCardSeries = async () => {
       try {
-        const response = await api.get('cards/card-series/');
+        const response = await api.get('api/cards/card-series/');
         const cardSeriesMap = {};
         response.data.map((_) => (
           cardSeriesMap[_.id] = { ..._ }
@@ -82,7 +82,7 @@ export default function List() {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await api.get('cards/tags/');
+        const response = await api.get('api/cards/tags/');
         const tagsMap = {};
         response.data.map((_) => (
           tagsMap[_.id] = { ..._ }
@@ -106,7 +106,7 @@ export default function List() {
   useEffect(() => {
     const fetchCardPartials = async () => {
       try {
-        const response = await api.get('cards/card-partials/');
+        const response = await api.get('api/cards/card-partials/');
         const cardPartialsMap = {};
         response.data.forEach((_) => {
           if (!cardPartialsMap[_.card]) {

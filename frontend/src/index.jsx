@@ -6,8 +6,12 @@ import {
 } from 'react-router-dom';
 
 import './styles/index.scss';
+import { AuthProvider } from './context/AuthProvider';
 import Root from './routes/root';
 import ErrorPage from './error-page';
+import Registration from './routes/registration';
+import Activation from './routes/activation';
+import Login from './routes/login';
 import New from './routes/new';
 import Edit from './routes/edit';
 import List from './routes/list';
@@ -19,6 +23,18 @@ const router = createBrowserRouter([
     element: <Root />,
     errorElement: <ErrorPage />,
     children: [
+      {
+        path: 'registration',
+        element: <Registration />,
+      },
+      {
+        path: 'activate/:uid/:token',
+        element: <Activation />,
+      },
+      {
+        path: 'login',
+        element: <Login />,
+      },
       {
         path: 'new',
         element: <New />,
@@ -41,6 +57,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </React.StrictMode>
 );

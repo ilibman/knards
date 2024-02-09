@@ -23,7 +23,9 @@ export default function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <header>
+    <header className={`
+      ${pathname === '/registration' || pathname === '/login' || pathname === '/activate' ? 'hidden' : ''}
+    `}>
       <nav aria-label="Global">
         <div className="flex justify-end my-2 mx-3 md:hidden">
           <button
