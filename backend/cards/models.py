@@ -108,7 +108,7 @@ class CardPartial(models.Model):
         choices=CardPartialType.choices,
         default=CardPartialType.TEXT
     )
-    content = models.TextField()
+    content = models.JSONField()
     position = models.PositiveSmallIntegerField(
         default=1,
         blank=False,
