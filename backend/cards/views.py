@@ -18,6 +18,16 @@ class CardSeriesViewSet(viewsets.ModelViewSet):
     queryset = CardSeries.objects.order_by('pk')
     lookup_field = 'pk'
 
+    def get_queryset(self):
+        card = self.request.query_params.get('card', None)
+
+        queryset = CardSeries.objects.all()
+        if card:
+            card = Card.objects.get(pk=card_id)
+            queryset = queryset.filter(pk=card.card_series.id)
+            
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
