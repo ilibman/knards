@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'djoser',
     'corsheaders',
     'accounts.apps.AccountsConfig',
@@ -133,12 +135,20 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ['JWT']
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_REFRESH_TOKENS': True,
+    'AUTH_HEADER_TYPES': ['JWT'],
+    'AUTH_COOKIE_HTTP_ONLY' : True,
 }
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 SUMMERNOTE_THEME = 'bs4'
 
+CSRF_TRUSTED_ORIGINS = [
+    localhost
+]
 CORS_ALLOWED_ORIGINS = [
     localhost
 ]
