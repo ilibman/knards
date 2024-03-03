@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { IoInformationCircleOutline } from 'react-icons/io5';
 import api from '../api';
-import './registration.scss';
 
 const EMAIL_REGEX = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
 const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9-_]{3,23}$/;

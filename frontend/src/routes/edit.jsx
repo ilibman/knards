@@ -1,22 +1,27 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Input,
   InputGroup,
-  SelectPicker,
+  InputPicker,
   TagPicker,
 } from 'rsuite';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
+import AuthContext from '../context/AuthProvider';
+import PartialEditor from '../components/PartialEditor';
 import api from '../api';
-import './edit.scss';
+import '../styles/rs-suite-overrides.scss';
 
 export default function Edit() {
+  const { authTokens } = useContext(AuthContext);
+  const navigate = useNavigate();
   const { id } = useParams();
-  const [card, setCard] = useState([]);
+
+  const [card, setCard] = useState({});
   const [cardSeries, setCardSeries] = useState({});
   const [tags, setTags] = useState({});
-  const [cardPartials, setCardPartials] = useState({});
+  const [cardPartials, setCardPartials] = useState([]);
 
   const [seriesPickerData, setSeriesPickerData] = useState([]);
   const [tagPickerData, setTagPickerData] = useState([]);
@@ -25,14 +30,21 @@ export default function Edit() {
   const [isCardSeriesLoading, setIsCardSeriesLoading] = useState(true);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
   const [isCardPartialsLoading, setIsCardPartialsLoading] = useState(true);
+  const [isCardSaving, setIsCardSaving] = useState(false);
 
-  const [activePartial, setActivePartial] = useState(0);
+  const [activePartial, setActivePartial] = useState(null);
 
   useEffect(() => {
     const fetchCard = async () => {
       try {
         const response = await api.get(
-          `api/cards/cards/${id}/`
+          `api/cards/cards/${id}/`,
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
         );
         setCard(response.data);
       } catch (error) {
@@ -50,7 +62,15 @@ export default function Edit() {
   useEffect(() => {
     const fetchCardSeries = async () => {
       try {
-        const response = await api.get('api/cards/card-series/');
+        const response = await api.get(
+          'api/cards/card-series/',
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
         const cardSeriesMap = {};
         response.data.map((_) => (
           cardSeriesMap[_.id] = { ..._ }
@@ -69,19 +89,24 @@ export default function Edit() {
     };
 
     fetchCardSeries();
-  }, []);
+  }, [card.id]);
 
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await api.get('api/cards/tags/');
+        const response = await api.get(
+          'api/cards/tags/',
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
         const tagsMap = {};
         response.data.map((_) => (
           tagsMap[_.id] = { ..._ }
         ));
-        setTagPickerData(
-          response.data.map((_) => ({ label: _.name, value: _.name }))
-        );
         setTags(tagsMap);
       } catch (error) {
         if (!error.response) {
@@ -93,12 +118,20 @@ export default function Edit() {
     };
 
     fetchTags();
-  }, []);
+  }, [card.id]);
 
   useEffect(() => {
     const fetchCardPartials = async () => {
       try {
-        const response = await api.get(`api/cards/card-partials/?card=${id}`);
+        const response = await api.get(
+          `api/cards/card-partials/?card=${id}`,
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
         setCardPartials(response.data);
       } catch (error) {
         if (!error.response) {
@@ -110,39 +143,107 @@ export default function Edit() {
     };
 
     fetchCardPartials();
-  }, [id]);
-
-  useEffect(() => {
-    if (card.id && card.tags.every((_) => typeof _ === 'string')) {
-      return;
-    }
-
-    if (card.id && Object.entries(tags).length > 0) {
-      const tagNames = card.tags.map((_) => (
-        tags[_].name
-      ));
-      setCard({
-        ...card,
-        tags: [...tagNames]
-      });
-    }
-  }, [card, tags]);
+  }, [card.id]);
 
   function handleSeriesPickerChange(value) {
     setCard({
       ...card,
       card_series: value
-    })
+    });
   }
 
-  function handleTagPickerChange(value) {
+  useEffect(() => {
+    setTagPickerData(
+      Object.values(tags).map((_) => ({ label: _.name, value: _.name }))
+    );
+
+    if (card.id && Object.entries(tags).length > 0) {
+      const tagsIds = card.tags.map((_) => (
+        tags[_].id
+      ));
+      const tagsNames = Object.values(tags)
+        .filter((_) => (
+          tagsIds.includes(_.id)
+        ))
+        .map((_) => (
+          _.name
+        ));
+      setCard({
+        ...card,
+        tags: [...tagsIds],
+        tagsNames: [...tagsNames]
+      });
+    }
+  }, [tags]);
+
+  function handleEnterTags(value) {
+    const allTagsNames = Object.values(tags).map((_) => _.name);
+    const newTags = value.filter((_) => (
+      !allTagsNames.includes(_)
+    ));
+
+    newTags.forEach(async (_) => {
+      try {
+        const response = await api.post(
+          'api/cards/tags/',
+          { name: _ },
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`,
+              'X-CSRFToken': document.cookie.replace(
+                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+              )
+            },
+            withCredentials: true
+          }
+        );
+
+        setCard({
+          ...card,
+          tags: [...card.tags, response.data.id]
+        });
+        const tagsMap = {};
+        Object.values(tags).map((__) => (
+          tagsMap[__.id] = { ...__ }
+        ));
+        tagsMap[response.data.id] = { ...response.data };
+        setTags(tagsMap);
+      } catch (error) {
+        if (!error.response) {
+          console.error(error.message);
+        }
+      }
+    });
+  }
+
+  async function handlePickTags(value) {
+    const newTags = Object.values(tags)
+      .filter((_) => (
+        value.includes(_.name)
+      ))
+      .map((_) => (
+        {
+          id: _.id,
+          name: _.name
+        }
+      ));
+
+    setCard({
+      ...card,
+      tags: newTags.map((_) => _.id),
+      tagsNames: newTags.map((_) => _.name)
+    });
   }
 
   function addPartial(index, type) {
     cardPartials.splice(index, 0, {
       'partial_type': type,
-      content: '',
-      card: card.id
+      content: [{
+        type: 'text',
+        content: '',
+        firstNodeInLine: true,
+        lastNodeInLine: true
+      }]
     });
     setCardPartials(cardPartials.map((_, i) => (
       {
@@ -152,40 +253,119 @@ export default function Edit() {
     )));
   }
 
-  function saveChanges() {
-    setActivePartial(0);
+  async function saveChanges() {
+    setIsCardSaving(true);
 
-    const save = async () => {
-      try {
-        const response = await api.patch(
-          `api/cards/cards/${card.id}/`,
-          {
-            title: card.title
-          }
-        );
-
-        console.log(response.data)
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
+    // save card metadata
+    try {
+      await api.patch(
+        `api/cards/cards/${card.id}/`,
+        { ...card },
+        {
+          headers: {
+            Authorization: `JWT ${authTokens.access}`,
+            'X-CSRFToken': document.cookie.replace(
+              /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+            )
+          },
+          withCredentials: true
         }
-      } finally {
-        setIsCardLoading(false);
+      );
+    } catch (error) {
+      if (!error.response) {
+        console.error(error.message);
       }
-    };
+    } finally {
+      if (cardPartials.length === 0) {
+        setIsCardSaving(false);
+        navigate('/list');
+      }
+    }
 
-    save();
+    // save partials
+    cardPartials.forEach(async (_, i) => {
+      if (!_.id) {
+        try {
+          await api.post(
+            'api/cards/card-partials/',
+            { ..._ },
+            {
+              headers: {
+                Authorization: `JWT ${authTokens.access}`,
+                'X-CSRFToken': document.cookie.replace(
+                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+                )
+              },
+              withCredentials: true
+            }
+          );
+        } catch (error) {
+          if (!error.response) {
+            console.error(error.message);
+          }
+        } finally {
+          if (i === cardPartials.length - 1) {
+            setIsCardSaving(false);
+            navigate('/list');
+          }
+        }
+      } else {
+        try {
+          await api.patch(
+            `api/cards/card-partials/${_.id}/`,
+            { ..._ },
+            {
+              headers: {
+                Authorization: `JWT ${authTokens.access}`,
+                'X-CSRFToken': document.cookie.replace(
+                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+                )
+              },
+              withCredentials: true
+            }
+          );
+        } catch (error) {
+          if (!error.response) {
+            console.error(error.message);
+          }
+        } finally {
+          if (i === cardPartials.length - 1) {
+            setIsCardSaving(false);
+            navigate('/list');
+          }
+        }
+      }
+    });
+  }
+
+  function handlePartialChange(event, index) {
+    setCardPartials(cardPartials.map((_, i) => {
+      if (i === index) {
+        return {
+          ..._,
+          content: event.target.value
+        }
+      } else {
+        return _;
+      }
+    }));
   }
 
   return (
     <>
-      <div id="title" className="">
-        <label className="mx-3 font-base font-semibold text-lg">Title:</label>
+      <div
+        id="title"
+        onClick={() => setActivePartial(null)}
+      >
+        <label
+          className="mx-3 text-white font-base font-semibold text-lg"
+        >Title:</label>
         <InputGroup
           inside
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
         >
           <Input
+            spellCheck={false}
             value={card.title ?? ''} 
             onChange={e => setCard({
               ...card,
@@ -194,26 +374,37 @@ export default function Edit() {
           />
         </InputGroup>
       </div>
-      <div id="series-picker" className="">
-        <label className="mx-3 font-base font-semibold text-lg">Series:</label>
-        <SelectPicker
+      <div
+        id="series-picker"
+        onClick={() => setActivePartial(null)}
+      >
+        <label
+          className="mx-3 text-white font-base font-semibold text-lg"
+        >Series:</label>
+        <InputPicker
           data={seriesPickerData}
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
           value={cardSeries[card.card_series]?.id}
           onChange={handleSeriesPickerChange}
         />
       </div>
-      <div id="tag-picker" className="">
-        <label className="mx-3 font-base font-semibold text-lg">Tags:</label>
+      <div
+        id="tag-picker"
+        onClick={() => setActivePartial(null)}
+      >
+        <label
+          className="mx-3 text-white font-base font-semibold text-lg"
+        >Tags:</label>
         <TagPicker
           data={tagPickerData}
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          value={card.tags}
-          onChange={handleTagPickerChange}
+          value={card.tagsNames}
+          onChange={handleEnterTags}
+          onSelect={handlePickTags}
         />
       </div>
       
-      <div className="">
+      <div>
         {(
           isCardLoading
           || isCardSeriesLoading
@@ -227,34 +418,38 @@ export default function Edit() {
           && !isCardPartialsLoading
         ) && (
           <div className="flex flex-col border-t">
-            {cardPartials.map((_, i) => (
+            {cardPartials.map((_, partialIndex) => (
               <div
                 className="pt-2.5 pr-2.5 pl-2.5"
-                key={i}
+                key={_.id}
               >
                 <ul className="flex flex-row mb-2">
                   <li
                     className="mr-2 p-2 bg-white shadow-md cursor-pointer
                       hover:opacity-80"
-                    onClick={() => addPartial(i, 'text')}
+                    onClick={() => addPartial(partialIndex, 'text')}
                   >
                     <IoText />
                   </li>
                   <li
                     className="mr-2 p-2 bg-white shadow-md cursor-pointer
                       hover:opacity-80"
-                    onClick={() => addPartial(i, 'code')}
+                    onClick={() => addPartial(partialIndex, 'code')}
                   >
                     <FaCode />
                   </li>
                 </ul>
-                <div
-                  className={`p-4 bg-brown-light shadow-md outline-none
-                    ${activePartial === cardPartials[i].position ? 'active-partial' : 'inactive-partial'}`}
-                  contentEditable="true"
-                  suppressContentEditableWarning={true}
-                  onClick={() => setActivePartial(cardPartials[i].position)}
-                >{_.content}</div>
+                <PartialEditor
+                  className={`p-4 flex flex-wrap bg-brown-light shadow-md
+                    ${activePartial === partialIndex
+                      ? 'active-partial'
+                      : 'inactive-partial'}`.replace(/\s+/g, ' ').trim()}
+                  content={_.content}
+                  partialPosition={_.position}
+                  onClick={setActivePartial}
+                  onChange={(e) => handlePartialChange(e, partialIndex)}
+                >
+                </PartialEditor>
               </div>
             ))}
             <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">

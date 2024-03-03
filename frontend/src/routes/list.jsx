@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Input,
@@ -9,10 +9,12 @@ import {
   RadioGroup
 } from 'rsuite';
 import SearchIcon from '@rsuite/icons/Search';
+import AuthContext from '../context/AuthProvider';
 import api from '../api';
-import './list.scss';
+import { stringifyPartialContent } from '../utils';
 
 export default function List() {
+  const { authTokens } = useContext(AuthContext);
   const [params, setParams] = useState({});
   const [cards, setCards] = useState([]);
   const [cardSeries, setCardSeries] = useState({});
@@ -40,7 +42,13 @@ export default function List() {
 
       try {
         const response = await api.get(
-          `api/cards/cards/${flattenedParams ? `?${flattenedParams}` : ''}`
+          `api/cards/cards/${flattenedParams ? `?${flattenedParams}` : ''}`,
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
         );
         setCards(response.data);
       } catch (error) {
@@ -58,7 +66,15 @@ export default function List() {
   useEffect(() => {
     const fetchCardSeries = async () => {
       try {
-        const response = await api.get('api/cards/card-series/');
+        const response = await api.get(
+          'api/cards/card-series/',
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
         const cardSeriesMap = {};
         response.data.map((_) => (
           cardSeriesMap[_.id] = { ..._ }
@@ -82,7 +98,15 @@ export default function List() {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await api.get('api/cards/tags/');
+        const response = await api.get(
+          'api/cards/tags/',
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
         const tagsMap = {};
         response.data.map((_) => (
           tagsMap[_.id] = { ..._ }
@@ -106,7 +130,15 @@ export default function List() {
   useEffect(() => {
     const fetchCardPartials = async () => {
       try {
-        const response = await api.get('api/cards/card-partials/');
+        const response = await api.get(
+          'api/cards/card-partials/',
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
         const cardPartialsMap = {};
         response.data.forEach((_) => {
           if (!cardPartialsMap[_.card]) {
@@ -183,16 +215,23 @@ export default function List() {
 
   return (
     <>
-      <div id="series-picker" className="">
-        <label className="mx-3 font-base font-semibold text-lg">Series:</label>
+      <div
+        className="mt-2"
+        id="series-picker"
+      >
+        <label
+          className="mx-3 text-white font-base font-semibold text-lg"
+        >Series:</label>
         <SelectPicker
           data={seriesPickerData}
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
           onChange={handleSeriesPickerChange}
         />
       </div>
-      <div id="tag-picker" className="">
-        <label className="mx-3 font-base font-semibold text-lg">Tags:</label>
+      <div id="tag-picker">
+        <label
+          className="mx-3 text-white font-base font-semibold text-lg"
+        >Tags:</label>
         <TagPicker
           data={tagPickerData}
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px' }}
@@ -208,8 +247,10 @@ export default function List() {
           <Radio className="text-lg" value="and">AND</Radio>
         </RadioGroup>
       </div>
-      <div id="fulltext-search" className="">
-        <label className="mx-3 font-base font-semibold text-lg">Fulltext:</label>
+      <div id="fulltext-search">
+        <label
+          className="mx-3 text-white font-base font-semibold text-lg"
+        >Fulltext:</label>
         <InputGroup
           inside
           style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
@@ -234,43 +275,40 @@ export default function List() {
           && !isTagsLoading
           && !isCardPartialsLoading
         ) && (
-          <div className="flex flex-col border-t">
+          <div className="flex flex-col border-t-2">
             {cards.map((_, i) => (
               <Link
-                className="border-b"
+                className="bg-brown-light border-b"
                 key={_.id}
                 to={`/edit/${_.id}`}
               >
                 <div className="flex font-semibold text-lg">
-                  <div className="px-2 border-r">{_.id}</div>
-                  <div className="flex-1 flex flex-col px-2 border-r">
+                  <div className="flex-1 px-2 border-r">
+                    {_.title}
+                  </div>
+                  <div
+                    className="flex-1 px-2 border-r"
+                    dangerouslySetInnerHTML={{
+                      __html: cardPartials[_.id]
+                        ? stringifyPartialContent(
+                          cardPartials[_.id][0].content,
+                          true
+                        ).substring(0, 100)
+                        : ''
+                    }}
+                  ></div>
+                  <div className="px-2 border-r">
                     {
-                      _.title
-                      ? (
-                        <>
-                          <div>{_.title}</div>
-                        </>
-                      ) : (
-                        <>
-                          <div>{
-                            cardPartials[_.id]
-                            ? cardPartials[_.id][0].content.substring(0, 10)
-                            : ''
-                          }</div>
-                        </>
-                      )
-                    }
-                    <div>{
                       _.card_series
-                      ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
-                      : ''
-                    }</div>
+                        ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
+                        : ''
+                    }
                   </div>
                   <div className="px-2 border-r">{_.tags.map((__) => (
                     <div key={tags[__].id}>{tags[__]?.name}</div>
                   ))}</div>
                   <div className="px-2">
-                    {new Date(_.created_at).toLocaleString(
+                    Created: {new Date(_.created_at).toLocaleString(
                       'en-UK',
                       { day: 'numeric', month: 'numeric', year: 'numeric' }
                     )}

@@ -1,10 +1,15 @@
 import { useRef, useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import AuthContext from '../context/AuthProvider';
 import api from '../api';
 
 export default function Login() {
-  const { setAuth } = useContext(AuthContext);
+  const { setAuthTokens, setUserId } = useContext(AuthContext);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
 
   const loginRef = useRef();
   const errorRef = useRef();
@@ -38,14 +43,21 @@ export default function Login() {
           withCredentials: true
         }
       );
-
-      const accessToken = response.data.access;
-
-      setAuth({ login, password, accessToken });
+      
+      setAuthTokens(response.data);
+      setUserId(jwtDecode(response.data.access).user_id);
+      localStorage.setItem('authTokens', JSON.stringify(response.data));
+      localStorage.setItem(
+        'userId',
+        JSON.stringify(jwtDecode(response.data.access).user_id)
+      );
 
       setLogin('');
       setPassword('');
+
+      navigate(from, { replace: true });
     } catch (error) {
+      console.log(error)
       if (!error.response) {
         setErrorMsg('No server response');
       } else if (error.response.status === 400) {

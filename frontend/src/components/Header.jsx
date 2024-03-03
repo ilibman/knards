@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
 import { RxHamburgerMenu, RxCross2 } from 'react-icons/rx';
+import AuthContext from '../context/AuthProvider';
 import './Header.scss';
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { logout } = useContext(AuthContext);
   const { pathname } = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -41,10 +43,10 @@ export default function Header() {
             />
           </button>
         </div>
-        <div className="hidden md:flex">
+        <div className="hidden border-b-2 border-black md:flex">
           <Link
             className="px-8
-              text-black font-base text-3xl font-extrabold uppercase
+              text-white font-base text-3xl font-extrabold uppercase
               hover:text-white hover:bg-black"
             to={'/'}
           >
@@ -52,7 +54,7 @@ export default function Header() {
           </Link>
           <Link
             className="px-8
-              text-black font-base text-3xl font-extrabold uppercase
+              text-white font-base text-3xl font-extrabold uppercase
               hover:text-white hover:bg-black"
             to={'new'}
           >
@@ -60,7 +62,7 @@ export default function Header() {
           </Link>
           <Link
             className="px-8
-              text-black font-base text-3xl font-extrabold uppercase
+              text-white font-base text-3xl font-extrabold uppercase
               hover:text-white hover:bg-black"
             to={'list'}
           >
@@ -68,12 +70,20 @@ export default function Header() {
           </Link>
           <Link
             className="px-8
-              text-black font-base text-3xl font-extrabold uppercase
+              text-white font-base text-3xl font-extrabold uppercase
               hover:text-white hover:bg-black"
             to={'explore'}
           >
             Explore
           </Link>
+          <button
+            className="px-8
+              text-white font-base text-3xl font-extrabold uppercase
+              hover:text-white hover:bg-black"
+            onClick={logout}
+          >
+            Logout
+          </button>
         </div>
       </nav>
       <Dialog.Root
@@ -89,25 +99,25 @@ export default function Header() {
                 aria-label="Global"
               >
                 <Link
-                  className="text-black font-base text-6xl font-bold uppercase"
+                  className="text-white font-base text-6xl font-bold uppercase"
                   to={'/'}
                 >
                   Home
                 </Link>
                 <Link
-                  className="text-black font-base text-6xl font-bold uppercase"
+                  className="text-white font-base text-6xl font-bold uppercase"
                   to={'new'}
                 >
                   New card
                 </Link>
                 <Link
-                  className="text-black font-base text-6xl font-bold uppercase"
+                  className="text-white font-base text-6xl font-bold uppercase"
                   to={'list'}
                 >
                   My cards
                 </Link>
                 <Link
-                  className="text-black font-base text-6xl font-bold uppercase"
+                  className="text-white font-base text-6xl font-bold uppercase"
                   to={'explore'}
                 >
                   Explore
