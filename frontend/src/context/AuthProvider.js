@@ -59,14 +59,16 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       if (!error.response) {
-        console.err('No server response');
+        console.error('No server response');
       } else {
-        console.err('Token refresh failed');
+        console.error('Token refresh failed');
         logout();
       }
+    } finally {
+      setLoading(false);
     }
   }
-
+  
   return (
     <AuthContext.Provider
       value={{ authTokens, setAuthTokens, userId, setUserId, logout }}
