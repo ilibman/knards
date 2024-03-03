@@ -7,6 +7,7 @@ import {
 
 import './styles/index.scss';
 import { AuthProvider } from './context/AuthProvider';
+import RequireAuth from './components/RequireAuth';
 import Root from './routes/root';
 import ErrorPage from './error-page';
 import Registration from './routes/registration';
@@ -36,21 +37,26 @@ const router = createBrowserRouter([
         element: <Login />,
       },
       {
-        path: 'new',
-        element: <New />,
-      },
-      {
-        path: 'edit/:id',
-        element: <Edit />,
-      },
-      {
-        path: 'list',
-        element: <List />,
-      },
-      {
-        path: 'explore',
-        element: <Explore />,
-      },
+        element: <RequireAuth />,
+        children: [
+          {
+            path: 'new',
+            element: <New />,
+          },
+          {
+            path: 'edit/:id',
+            element: <Edit />,
+          },
+          {
+            path: 'list',
+            element: <List />
+          },
+          {
+            path: 'explore',
+            element: <Explore />,
+          },
+        ]
+      }
     ]
   },
 ]);
