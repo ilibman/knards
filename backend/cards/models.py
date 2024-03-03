@@ -89,7 +89,6 @@ class Card(models.Model):
 
     class Meta:
         ordering = ['pk']
-        unique_together = ('card_series', 'n_in_series')
 
 
 class CardPartialType(models.TextChoices):
