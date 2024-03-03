@@ -1,0 +1,86 @@
+.partial-editor {
+  background-color: var(--color-partial-fill);
+
+  &.active-partial {
+    border: 2px solid var(--color-active-partial-border);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
+  }
+  
+  &.inactive-partial {
+    border: 2px solid var(--color-inactive-partial-border);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 2px -1px var(--color-input-shadow);
+
+    &:hover {
+      border: 2px solid var(--color-active-partial-border);
+      box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
+    }
+  }
+
+  .partial-line {
+    flex-basis: 100%;
+    padding: 2px 0;
+  }
+
+  span {
+    display: flex;
+    flex-basis: content;
+    min-height: 24px;
+
+    color: var(--color-partial-text);
+    font-size: 18px;
+      
+    white-space: nowrap;
+    outline: none;
+  }
+
+  span.text {
+    &::selection {
+      color: var(--color-partial-text-selection-text);
+      background-color: var(--color-partial-text-selection-background);
+      border-radius: 2px;
+    }
+  
+    &::-moz-selection {
+      color: var(--color-partial-text-selection-text);
+      background-color: var(--color-partial-text-selection-background);
+      border-radius: 2px;
+    }
+  }
+  
+  span.text:not(.last-node-in-line) {
+    flex-grow: 0;
+  }
+  
+  span.text.last-node-in-line {
+    flex-grow: 1;
+  }
+  
+  span.inset-question {
+    flex-grow: 0;
+    flex-basis: 20px;
+    margin: 0 4px;
+    padding: 0 4px;
+
+    color: var(--color-inset-question-text);
+    font-weight: 600;
+    line-height: 1.4;
+  
+    background-color: var(--color-inset-question-fill);
+    border: 2px solid var(--color-inset-question-border);
+    border-radius: 2px;
+  
+    &::selection {
+      color: var(--color-partial-inset-question-selection-text);
+      background-color: var(--color-partial-inset-question-selection-background);
+      border-radius: 2px;
+    }
+  
+    &::-moz-selection {
+      color: var(--color-partial-inset-question-selection-text);
+      background-color: var(--color-partial-inset-question-selection-background);
+      border-radius: 2px;
+    }
+  }
+}
