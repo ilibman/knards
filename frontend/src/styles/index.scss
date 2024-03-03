@@ -4,29 +4,58 @@
 
 @layer base {
   :root {
-    --color-black: #2e382e;
-    --color-white: #eff1ed;
-    --color-brown: #8b786d;
-    --color-brown-light: #fff3d6;
-    --color-green: #499167;
-    --color-violet-light: #7e78d2;
-    --color-violet-dark: #6f58c9;
-    --color-blue: #3777ff;
-    --color-blue-light: #99b9ff;
-    --color-red-light: #eb99a0;
-    --color-red-dark: #d73340;
+    --color-black: #1f2305;
+    --color-white: #cbbfbb;
+    --color-white-hover-dark: #b8a8a3;
+    --color-brown: #51433e;
+    --color-brown-light: #736059;
+    --color-green: #6f7c12;
+    --color-blue: #4464ad;
+    --color-blue-light: #899fd1;
+
+    --color-background: var(--color-brown);
+    --color-input-border: var(--color-black);
+    --color-input-border-active: var(--color-blue-light);
+    --color-input-fill: var(--color-brown-light);
+    --color-input-text: var(--color-white);
+    --color-input-shadow: var(--color-black);
+    --color-input-shadow-active: var(--color-blue-light);
+    --color-tag-text: var(--color-white);
+    --color-tag-close-button-hover: var(--color-white-hover-dark);
+    --color-tag-background: var(--color-blue);
+    --color-dropdown-background: var(--color-white);
+    --color-dropdown-text: var(--color-black);
+    --color-dropdown-selected-item-background: var(--color-blue-light);
+    --color-dropdown-selected-item-text: var(--color-blue);
+    --color-active-partial-border: var(--color-blue-light);
+    --color-inactive-partial-border: var(--color-black);
+    --color-partial-fill: var(--color-brown-light);
+    --color-partial-text: var(--color-white);
+    --color-inset-question-fill: var(--color-blue);
+    --color-inset-question-border: var(--color-blue);
+    --color-inset-question-text: var(--color-white);
+    --color-partial-text-selection-background: var(--color-blue);
+    --color-partial-text-selection-text: var(--color-white);
+    --color-partial-inset-question-selection-background: var(--color-white);
+    --color-partial-inset-question-selection-text: var(--color-blue);
+
+    --color-button-regular: var(--color-white);
+    --color-button-confirm: var(--color-green);
+
     --font-base: 'Source Sans Pro', sans-serif;
     --font-code: 'Source Code Pro', mono;
+
+    --border-radius: 4px;
   }
 }
 
 html,
 body {
   height: 100%;
-  background-color: var(--color-brown);
+  background-color: var(--color-background);
 
   @media (prefers-color-scheme: dark) {
-    background-color: var(--color-brown);
+    background-color: var(--color-background);
   }
 }
 
@@ -49,4 +78,9 @@ h5,
 h6 {
   font-family: var(--font-base);
   text-transform: uppercase;
+}
+
+.offscreen {
+  position: absolute;
+  left: -9999px;
 }
