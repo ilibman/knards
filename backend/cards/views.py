@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets, permissions
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
@@ -47,7 +48,7 @@ class CardsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         series = self.request.query_params.get('series', None)
         tags = self.request.query_params.get('tags', None)
-        tag_inclusion = self.request.query_params.get('tag_inclusion', None)
+        tag_inclusion = self.request.query_params.get('tag_inclusion', 'or')
         fulltext = self.request.query_params.get('fulltext', None)
 
         queryset = Card.objects.all()
@@ -56,11 +57,20 @@ class CardsViewSet(viewsets.ModelViewSet):
                 card_series=series
             )
         if tags:
-            queryset = queryset.filter(
-                tags__in=tags.split(',')
-            )
+            tags_list = tags.split(',')
+            if tag_inclusion == 'or':
+                q = Q()
+                for tag in tags_list:
+                    q |= Q(tags__in=tag)
+                queryset = queryset.filter(q)
+            if tag_inclusion == 'and':
+                for index, tag in enumerate(tags_list):
+                    if index == 0:
+                        queryset = queryset.filter(tags__in=tag)
+                    else:
+                        queryset &= queryset.filter(tags__in=tag)
             
-        return queryset.order_by('created_at')
+        return queryset.distinct().order_by('created_at')
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
