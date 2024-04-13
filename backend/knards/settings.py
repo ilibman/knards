@@ -8,7 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Environment variables
 django_secret_key = os.environ.get('DJANGO_SECRET_KEY')
 django_debug = os.environ.get('DJANGO_DEBUG')
-django_allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS')
 db_name = os.environ.get('DB_NAME')
 db_user = os.environ.get('DB_USER')
 db_password = os.environ.get('DB_PASSWORD')
@@ -22,7 +21,10 @@ SECRET_KEY = django_secret_key
 
 DEBUG = django_debug
 
-ALLOWED_HOSTS = django_allowed_hosts.split(',')
+if django_debug:
+    ALLOWED_HOSTS = ['www.knards.com', 'knards.com', 'localhost']
+else:
+    ALLOWED_HOSTS = ['www.knards.com', 'knards.com']
 
 
 # Application definition
@@ -145,12 +147,14 @@ SIMPLE_JWT = {
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 SUMMERNOTE_THEME = 'bs4'
 
-CSRF_TRUSTED_ORIGINS = [
-    origin for origin in django_allowed_hosts.split(',')
-]
-CORS_ALLOWED_ORIGINS = [
-    origin for origin in django_allowed_hosts.split(',')
-]
+if django_debug:
+    CSRF_TRUSTED_ORIGINS = [
+        'https://www.knards.com', 'https://knards.com', 'http://localhost'
+    ]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CSRF_TRUSTED_ORIGINS = []
+    CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS=True
 
 AUTH_USER_MODEL = 'accounts.User'
