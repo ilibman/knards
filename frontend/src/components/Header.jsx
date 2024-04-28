@@ -38,7 +38,7 @@ export default function Header() {
               Open mobile menu
             </span>
             <RxHamburgerMenu
-              className="h-8 w-8 stroke-1 stroke-black"
+              className="h-8 w-8 stroke-1 stroke-white"
               aria-hidden="true"
             />
           </button>
@@ -129,7 +129,7 @@ export default function Header() {
                 items-center justify-center p-1
                 focus:outline-none"
             >
-              <RxCross2 className="h-8 w-8 stroke-1 stroke-black" />
+              <RxCross2 className="h-8 w-8 stroke-2 stroke-white" />
             </Dialog.Close>
           </Dialog.Content>
         </Dialog.Portal>
