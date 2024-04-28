@@ -18,24 +18,12 @@
     }
   }
 
-  .partial-line {
-    flex-basis: 100%;
-    padding: 2px 0;
-  }
-
   span {
-    display: flex;
-    flex-basis: content;
-    min-height: 24px;
-
     color: var(--color-partial-text);
     font-size: 18px;
-      
-    white-space: nowrap;
-    outline: none;
   }
 
-  span.text {
+  span:not(.inset-question) {
     &::selection {
       color: var(--color-partial-text-selection-text);
       background-color: var(--color-partial-text-selection-background);
@@ -49,17 +37,7 @@
     }
   }
   
-  span.text:not(.last-node-in-line) {
-    flex-grow: 0;
-  }
-  
-  span.text.last-node-in-line {
-    flex-grow: 1;
-  }
-  
   span.inset-question {
-    flex-grow: 0;
-    flex-basis: 20px;
     margin: 0 4px;
     padding: 0 4px;
 
