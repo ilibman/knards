@@ -214,7 +214,11 @@ export default function List() {
 
   function renderPartialText(content) {
     return content.map((_) => (
-      _.children.map((__) => __.text)
+      _.children.map((__) => (
+        __.insetQuestion
+          ? '?'
+          : __.text
+      ))
     )).flat().join(' ').substring(0, 100);
   }
 
@@ -288,30 +292,44 @@ export default function List() {
                 to={`/edit/${_.id}`}
               >
                 <div className="flex font-semibold text-lg">
+                  {
+                    _.title
+                    && (
+                      <div className="flex-1 px-2 border-r">
+                        {_.title}
+                      </div>
+                    )
+                  }
                   <div className="flex-1 px-2 border-r">
-                    {_.title}
-                  </div>
-                  <div
-                    className="flex-1 px-2 border-r"
-                    dangerouslySetInnerHTML={{
-                      __html: cardPartials[_.id]
+                    {
+                      cardPartials[_.id]
                         ? renderPartialText(
                           cardPartials[_.id][0].content,
                           true
                         )
                         : ''
-                    }}
-                  ></div>
-                  <div className="px-2 border-r">
-                    {
-                      _.card_series
-                        ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
-                        : ''
                     }
                   </div>
-                  <div className="px-2 border-r">{_.tags.map((__) => (
-                    <div key={tags[__].id}>{tags[__]?.name}</div>
-                  ))}</div>
+                  {
+                    _.card_series
+                    && (
+                      <div className="px-2 border-r">
+                        {
+                          _.card_series
+                            ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
+                            : ''
+                        }
+                      </div>
+                    )
+                  }
+                  {
+                    _.tags.length > 0
+                    && (
+                      <div className="px-2 border-r">{_.tags.map((__) => (
+                        <div key={tags[__].id}>{tags[__]?.name}</div>
+                      ))}</div>
+                    )
+                  }
                   <div className="px-2">
                     Created: {new Date(_.created_at).toLocaleString(
                       'en-UK',
