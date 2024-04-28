@@ -149,7 +149,7 @@ SUMMERNOTE_THEME = 'bs4'
 
 if django_debug:
     CSRF_TRUSTED_ORIGINS = [
-        'https://www.knards.com', 'https://knards.com', 'http://localhost'
+        'https://www.knards.com', 'https://knards.com', 'http://localhost:3000'
     ]
     CORS_ALLOW_ALL_ORIGINS = True
 else:
