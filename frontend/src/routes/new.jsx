@@ -150,13 +150,11 @@ export default function New() {
 
   function addPartial(index, type) {
     cardPartials.splice(index, 0, {
-      'partial_type': type,
+      partial_type: type,
       content: [{
-        type: 'text',
-        content: '',
-        firstNodeInLine: true,
-        lastNodeInLine: true
-      }]
+        type,
+        children: [{ text: '' }]
+      }],
     });
     setCardPartials(cardPartials.map((_, i) => (
       {
@@ -231,12 +229,12 @@ export default function New() {
     }
   }, [card.id]);
 
-  function handlePartialChange(event, index) {
+  function handlePartialChange(value, partialIndex) {
     setCardPartials(cardPartials.map((_, i) => {
-      if (i === index) {
+      if (i === partialIndex) {
         return {
           ..._,
-          content: event.target.value
+          content: value
         }
       } else {
         return _;
@@ -244,69 +242,86 @@ export default function New() {
     }));
   }
 
+  function renderReadOnlyPartial(content) {
+    return (
+      <>
+        {content.map((_, i) => (
+          <span
+            key={i}
+          >{_.children.map((__, j) => (
+            <span
+              className={`${__.insetQuestion ? 'inset-question' : ''}`}
+              key={i + j}
+            >{__.text}</span>
+          ))}</span>
+        ))}
+      </>
+    );
+  }
+
   return (
     <>
-      <div
-        className="mt-2"
-        id="title"
-        onClick={() => setActivePartial(null)}
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Title:</label>
-        <InputGroup
-          inside
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-        >
-          <Input
-            spellCheck={false}
-            value={card.title ?? ''}
-            onChange={e => setCard({
-              ...card,
-              title: e
-            })}
-          />
-        </InputGroup>
-      </div>
-      <div
-        id="series-picker"
-        onClick={() => setActivePartial(null)}
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Series:</label>
-        <SelectPicker
-          data={seriesPickerData}
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          value={cardSeries[card.card_series]?.id}
-          onChange={handleSeriesPickerChange}
-        />
-      </div>
-      <div
-        id="tag-picker"
-        onClick={() => setActivePartial(null)}
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Tags:</label>
-        <TagPicker
-          data={tagPickerData}
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          value={card.tagsNames}
-          onChange={handleEnterTags}
-          onSelect={handlePickTags}
-        />
-      </div>
-      
-      <div>
-        {(
-          isCardSeriesLoading
-          || isTagsLoading
-        ) && <p>Loading...</p>}
-        {(
-          !isCardSeriesLoading
-          && !isTagsLoading
-        ) && (
+      {(
+        isCardSeriesLoading
+        || isTagsLoading
+      ) && <p>Loading...</p>}
+      {(
+        !isCardSeriesLoading
+        && !isTagsLoading
+      ) && (
+        <>
+          <div
+            className="mt-2"
+            id="title"
+            onClick={() => setActivePartial(null)}
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Title:</label>
+            <InputGroup
+              inside
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+            >
+              <Input
+                spellCheck={false}
+                value={card.title ?? ''}
+                onChange={e => setCard({
+                  ...card,
+                  title: e
+                })}
+              />
+            </InputGroup>
+          </div>
+          <div
+            id="series-picker"
+            onClick={() => setActivePartial(null)}
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Series:</label>
+            <SelectPicker
+              data={seriesPickerData}
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              value={cardSeries[card.card_series]?.id}
+              onChange={handleSeriesPickerChange}
+            />
+          </div>
+          <div
+            id="tag-picker"
+            onClick={() => setActivePartial(null)}
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Tags:</label>
+            <TagPicker
+              data={tagPickerData}
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              value={card.tagsNames}
+              onChange={handleEnterTags}
+              onSelect={handlePickTags}
+            />
+          </div>
+
           <div className="flex flex-col border-t-2 border-black">
             {cardPartials.map((_, partialIndex) => (
               <div
@@ -329,17 +344,22 @@ export default function New() {
                     <FaCode />
                   </li>
                 </ul>
-                <PartialEditor
-                  className={`p-4 flex flex-wrap bg-brown-light shadow-md
-                    ${activePartial === partialIndex
-                      ? 'active-partial'
-                      : 'inactive-partial'}`.replace(/\s+/g, ' ').trim()}
-                  content={_.content}
-                  partialPosition={_.position}
-                  onClick={setActivePartial}
-                  onChange={(e) => handlePartialChange(e, partialIndex)}
-                >
-                </PartialEditor>
+                {activePartial === partialIndex && (
+                  <PartialEditor
+                    content={_.content}
+                    onClick={() => setActivePartial(partialIndex)}
+                    onChange={
+                      (value) => handlePartialChange(value, partialIndex)
+                    }
+                  />
+                )}
+                {activePartial !== partialIndex && (
+                  <div
+                    className="p-4 flex flex-wrap bg-brown-light shadow-md
+                      outline-none partial-editor inactive-partial"
+                    onClick={() => setActivePartial(partialIndex)}
+                  >{renderReadOnlyPartial(_.content)}</div>
+                )}
               </div>
             ))}
             <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">
@@ -367,8 +387,8 @@ export default function New() {
               <FaCheck className="fill-white" />
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </>
   );
 }

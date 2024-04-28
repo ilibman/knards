@@ -11,7 +11,6 @@ import { IoText } from 'react-icons/io5';
 import AuthContext from '../context/AuthProvider';
 import PartialEditor from '../components/PartialEditor';
 import api from '../api';
-import '../styles/rs-suite-overrides.scss';
 
 export default function Edit() {
   const { authTokens } = useContext(AuthContext);
@@ -237,13 +236,12 @@ export default function Edit() {
 
   function addPartial(index, type) {
     cardPartials.splice(index, 0, {
-      'partial_type': type,
+      partial_type: type,
       content: [{
-        type: 'text',
-        content: '',
-        firstNodeInLine: true,
-        lastNodeInLine: true
-      }]
+        type,
+        children: [{ text: '' }]
+      }],
+      card: card.id
     });
     setCardPartials(cardPartials.map((_, i) => (
       {
@@ -338,12 +336,12 @@ export default function Edit() {
     });
   }
 
-  function handlePartialChange(event, index) {
+  function handlePartialChange(value, partialIndex) {
     setCardPartials(cardPartials.map((_, i) => {
-      if (i === index) {
+      if (i === partialIndex) {
         return {
           ..._,
-          content: event.target.value
+          content: value
         }
       } else {
         return _;
@@ -351,134 +349,159 @@ export default function Edit() {
     }));
   }
 
+  function renderReadOnlyPartial(content) {
+    return (
+      <>
+        {content.map((_, i) => (
+          <span
+            key={i}
+          >{_.children.map((__, j) => (
+            <span
+              className={`${__.insetQuestion ? 'inset-question' : ''}`}
+              key={i + j}
+            >{__.text}</span>
+          ))}</span>
+        ))}
+      </>
+    );
+  }
+
   return (
     <>
-      <div
-        id="title"
-        onClick={() => setActivePartial(null)}
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Title:</label>
-        <InputGroup
-          inside
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-        >
-          <Input
-            spellCheck={false}
-            value={card.title ?? ''} 
-            onChange={e => setCard({
-              ...card,
-              title: e
-            })}
-          />
-        </InputGroup>
-      </div>
-      <div
-        id="series-picker"
-        onClick={() => setActivePartial(null)}
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Series:</label>
-        <InputPicker
-          data={seriesPickerData}
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          value={cardSeries[card.card_series]?.id}
-          onChange={handleSeriesPickerChange}
-        />
-      </div>
-      <div
-        id="tag-picker"
-        onClick={() => setActivePartial(null)}
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Tags:</label>
-        <TagPicker
-          data={tagPickerData}
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          value={card.tagsNames}
-          onChange={handleEnterTags}
-          onSelect={handlePickTags}
-        />
-      </div>
-      
-      <div>
-        {(
-          isCardLoading
-          || isCardSeriesLoading
-          || isTagsLoading
-          || isCardPartialsLoading
-        ) && <p>Loading...</p>}
-        {(
-          !isCardLoading
-          && !isCardSeriesLoading
-          && !isTagsLoading
-          && !isCardPartialsLoading
-        ) && (
-          <div className="flex flex-col border-t">
-            {cardPartials.map((_, partialIndex) => (
-              <div
-                className="pt-2.5 pr-2.5 pl-2.5"
-                key={_.id}
-              >
-                <ul className="flex flex-row mb-2">
+      {(
+        isCardLoading
+        || isCardSeriesLoading
+        || isTagsLoading
+      ) && <p>Loading...</p>}
+      {(
+        !isCardLoading
+        && !isCardSeriesLoading
+        && !isTagsLoading
+      ) && (
+        <>
+          <div
+            id="title"
+            onClick={() => setActivePartial(null)}
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Title:</label>
+            <InputGroup
+              inside
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+            >
+              <Input
+                spellCheck={false}
+                value={card.title ?? ''} 
+                onChange={e => setCard({
+                  ...card,
+                  title: e
+                })}
+              />
+            </InputGroup>
+          </div>
+          <div
+            id="series-picker"
+            onClick={() => setActivePartial(null)}
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Series:</label>
+            <InputPicker
+              data={seriesPickerData}
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              value={cardSeries[card.card_series]?.id}
+              onChange={handleSeriesPickerChange}
+            />
+          </div>
+          <div
+            id="tag-picker"
+            onClick={() => setActivePartial(null)}
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Tags:</label>
+            <TagPicker
+              data={tagPickerData}
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              value={card.tagsNames}
+              onChange={handleEnterTags}
+              onSelect={handlePickTags}
+            />
+          </div>
+          
+          <div>
+            {isCardPartialsLoading && <p>Loading...</p>}
+            {!isCardPartialsLoading && (
+              <div className="flex flex-col border-t-2 border-black">
+                {cardPartials.map((_, partialIndex) => (
+                  <div
+                    className="pt-2.5 pr-2.5 pl-2.5"
+                    key={partialIndex}
+                  >
+                    <ul className="flex flex-row mb-2">
+                      <li
+                        className="mr-2 p-2 bg-white shadow-md cursor-pointer
+                          hover:opacity-80"
+                        onClick={() => addPartial(partialIndex, 'text')}
+                      >
+                        <IoText />
+                      </li>
+                      <li
+                        className="mr-2 p-2 bg-white shadow-md cursor-pointer
+                          hover:opacity-80"
+                        onClick={() => addPartial(partialIndex, 'code')}
+                      >
+                        <FaCode />
+                      </li>
+                    </ul>
+                    {activePartial === partialIndex && (
+                      <PartialEditor
+                        content={_.content}
+                        onClick={() => setActivePartial(partialIndex)}
+                        onChange={
+                          (value) => handlePartialChange(value, partialIndex)
+                        }
+                      />
+                    )}
+                    {activePartial !== partialIndex && (
+                      <div
+                        className="p-4 flex flex-wrap bg-brown-light shadow-md
+                          outline-none partial-editor inactive-partial"
+                        onClick={() => setActivePartial(partialIndex)}
+                      >{renderReadOnlyPartial(_.content)}</div>
+                    )}
+                  </div>
+                ))}
+                <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">
                   <li
                     className="mr-2 p-2 bg-white shadow-md cursor-pointer
                       hover:opacity-80"
-                    onClick={() => addPartial(partialIndex, 'text')}
+                    onClick={() => addPartial(cardPartials.length, 'text')}
                   >
                     <IoText />
                   </li>
                   <li
                     className="mr-2 p-2 bg-white shadow-md cursor-pointer
                       hover:opacity-80"
-                    onClick={() => addPartial(partialIndex, 'code')}
+                    onClick={() => addPartial(cardPartials.length, 'code')}
                   >
                     <FaCode />
                   </li>
                 </ul>
-                <PartialEditor
-                  className={`p-4 flex flex-wrap bg-brown-light shadow-md
-                    ${activePartial === partialIndex
-                      ? 'active-partial'
-                      : 'inactive-partial'}`.replace(/\s+/g, ' ').trim()}
-                  content={_.content}
-                  partialPosition={_.position}
-                  onClick={setActivePartial}
-                  onChange={(e) => handlePartialChange(e, partialIndex)}
+                <div
+                  className="flex justify-center mb-2.5 ml-2.5 p-2 w-[72px]
+                    bg-green shadow-md
+                    cursor-pointer hover:opacity-80"
+                  onClick={() => saveChanges()}
                 >
-                </PartialEditor>
+                  <FaCheck className="fill-white" />
+                </div>
               </div>
-            ))}
-            <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">
-              <li
-                className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                  hover:opacity-80"
-                onClick={() => addPartial(cardPartials.length, 'text')}
-              >
-                <IoText />
-              </li>
-              <li
-                className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                  hover:opacity-80"
-                onClick={() => addPartial(cardPartials.length, 'code')}
-              >
-                <FaCode />
-              </li>
-            </ul>
-            <div
-              className="flex justify-center mb-2.5 ml-2.5 p-2 w-[72px]
-                bg-green shadow-md
-                cursor-pointer hover:opacity-80"
-              onClick={() => saveChanges()}
-            >
-              <FaCheck className="fill-white" />
-            </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </>
   );
 }

@@ -11,7 +11,6 @@ import {
 import SearchIcon from '@rsuite/icons/Search';
 import AuthContext from '../context/AuthProvider';
 import api from '../api';
-import { stringifyPartialContent } from '../utils';
 
 export default function List() {
   const { authTokens } = useContext(AuthContext);
@@ -213,6 +212,12 @@ export default function List() {
     setParams({ ...params });
   }
 
+  function renderPartialText(content) {
+    return content.map((_) => (
+      _.children.map((__) => __.text)
+    )).flat().join(' ').substring(0, 100);
+  }
+
   return (
     <>
       <div
@@ -290,10 +295,10 @@ export default function List() {
                     className="flex-1 px-2 border-r"
                     dangerouslySetInnerHTML={{
                       __html: cardPartials[_.id]
-                        ? stringifyPartialContent(
+                        ? renderPartialText(
                           cardPartials[_.id][0].content,
                           true
-                        ).substring(0, 100)
+                        )
                         : ''
                     }}
                   ></div>
