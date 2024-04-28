@@ -353,14 +353,14 @@ export default function Edit() {
     return (
       <>
         {content.map((_, i) => (
-          <span
+          <p
             key={i}
           >{_.children.map((__, j) => (
             <span
               className={`${__.insetQuestion ? 'inset-question' : ''}`}
               key={i + j}
             >{__.text}</span>
-          ))}</span>
+          ))}</p>
         ))}
       </>
     );
@@ -466,7 +466,7 @@ export default function Edit() {
                     )}
                     {activePartial !== partialIndex && (
                       <div
-                        className="p-4 flex flex-wrap bg-brown-light shadow-md
+                        className="p-4 bg-brown-light shadow-md
                           outline-none partial-editor inactive-partial"
                         onClick={() => setActivePartial(partialIndex)}
                       >{renderReadOnlyPartial(_.content)}</div>
