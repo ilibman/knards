@@ -53,7 +53,7 @@ export default function PartialEditor({ ...props }) {
           <IoMdTrash />
         </li>
         <li
-          className="mr-2 p-2 bg-blue-default shadow-md cursor-pointer
+          className="mr-2 p-2 bg-blue shadow-md cursor-pointer
             hover:opacity-80"
           onClick={toggleInsetQuestion}
         >

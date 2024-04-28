@@ -9,12 +9,12 @@ module.exports = {
       black: 'var(--color-black)',
       white: 'var(--color-white)',
       brown: {
-        default: 'var(--color-brown)',
+        DEFAULT: 'var(--color-brown)',
         light: 'var(--color-brown-light)',
       },
       green: 'var(--color-green)',
       blue: {
-        default: 'var(--color-blue)',
+        DEFAULT: 'var(--color-blue)',
         light: 'var(--color-blue-light)'
       },
       red: 'var(--color-red)',
