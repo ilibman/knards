@@ -38,6 +38,8 @@
   }
   
   span.inset-question {
+    position: relative;
+
     margin: 0 4px;
     padding: 0 4px;
 
@@ -60,5 +62,43 @@
       background-color: var(--color-partial-inset-question-selection-background);
       border-radius: 2px;
     }
+  }
+}
+
+.cancel-inset-question-btn, .cancel-hints-btn {
+  &::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 6px;
+    width: 19px;
+    border: 1px solid var(--color-white);
+    transform: rotate(45deg);
+  }
+}
+
+div.hint {
+  position: absolute;
+  z-index: 950;
+
+  display: inline-block;
+  min-width: 25.188px;
+  min-height: 25.188px;
+  margin: 0 4px;
+  padding: 0 4px;
+
+  color: var(--color-hint-text);
+  font-size: 18px;
+  line-height: 1.4;
+
+  background-color: var(--color-hint-fill);
+  border: 2px solid var(--color-hint-border);
+  border-radius: 2px;
+
+  opacity: 0.5;
+  outline: none;
+
+  &:hover, &:focus {
+    opacity: 1;
   }
 }
