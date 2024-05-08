@@ -369,6 +369,7 @@ export default function Edit() {
       <>
         {content.map((_, i) => (
           <p
+            className="min-h-[27px]"
             key={i}
           >{_.children.map((__, j) => (
             <span
