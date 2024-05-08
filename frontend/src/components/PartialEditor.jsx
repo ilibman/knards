@@ -189,6 +189,7 @@ export default function PartialEditor({ ...props }) {
         <li
           className="mr-2 p-2 bg-red shadow-md cursor-pointer
             hover:opacity-80"
+          onClick={() => props.onDelete()}
         >
           <IoMdTrash />
         </li>

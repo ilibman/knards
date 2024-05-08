@@ -32,6 +32,7 @@ export default function Edit() {
   const [isCardSaving, setIsCardSaving] = useState(false);
 
   const [activePartial, setActivePartial] = useState(null);
+  const [partialsToDelete, setPartialsToDelete] = useState([]);
 
   useEffect(() => {
     const fetchCard = async () => {
@@ -322,6 +323,20 @@ export default function Edit() {
               withCredentials: true
             }
           );
+          partialsToDelete.forEach(async (_) => {
+            await api.delete(
+              `api/cards/card-partials/${_}/`,
+              {
+                headers: {
+                  Authorization: `JWT ${authTokens.access}`,
+                  'X-CSRFToken': document.cookie.replace(
+                    /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+                  )
+                },
+                withCredentials: true
+              }
+            );
+          });
         } catch (error) {
           if (!error.response) {
             console.error(error.message);
@@ -364,6 +379,13 @@ export default function Edit() {
         ))}
       </>
     );
+  }
+
+  function handlePartialDelete() {
+    const partialId = cardPartials[activePartial].id;
+    setActivePartial(null);
+    setCardPartials(cardPartials.filter((_, i) => i !== activePartial));
+    setPartialsToDelete([...partialsToDelete, partialId]);
   }
 
   return (
@@ -462,6 +484,7 @@ export default function Edit() {
                         onChange={
                           (value) => handlePartialChange(value, partialIndex)
                         }
+                        onDelete={handlePartialDelete}
                       />
                     )}
                     {activePartial !== partialIndex && (
