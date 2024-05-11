@@ -10,6 +10,7 @@ import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 import AuthContext from '../context/AuthProvider';
 import PartialEditor from '../components/PartialEditor';
+import DialogAddSeries from '../components/dialogs/DialogAddSeries';
 import api from '../api';
 
 export default function Edit() {
@@ -367,17 +368,35 @@ export default function Edit() {
   function renderReadOnlyPartial(content) {
     return (
       <>
-        {content.map((_, i) => (
-          <p
-            className="min-h-[27px]"
-            key={i}
-          >{_.children.map((__, j) => (
-            <span
-              className={`${__.insetQuestion ? 'inset-question' : ''}`}
-              key={i + j}
-            >{__.text}</span>
-          ))}</p>
-        ))}
+        {content.map((_, i) => {
+          if (_.type === 'text') {
+            return (
+              <p
+                className="min-h-[27px]"
+                key={i}
+              >{_.children.map((__, j) => (
+                <span
+                  className={`${__.insetQuestion ? 'inset-question' : ''}`}
+                  key={i + j}
+                >{__.text}</span>
+              ))}</p>
+            );
+          } else {
+            return (
+              <pre
+                className="min-h-[27px] code"
+                key={i}
+              >
+                <code>{_.children.map((__, j) => (
+                  <span
+                    className={`${__.insetQuestion ? 'inset-question' : ''}`}
+                    key={i + j}
+                  >{__.text}</span>
+                ))}</code>
+              </pre>
+            );
+          }
+        })}
       </>
     );
   }
@@ -430,12 +449,15 @@ export default function Edit() {
             <label
               className="mx-3 text-white font-base font-semibold text-lg"
             >Series:</label>
-            <InputPicker
-              data={seriesPickerData}
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              value={cardSeries[card.card_series]?.id}
-              onChange={handleSeriesPickerChange}
-            />
+            <div className="flex">
+              <InputPicker
+                data={seriesPickerData}
+                style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+                value={cardSeries[card.card_series]?.id}
+                onChange={handleSeriesPickerChange}
+              />
+              <DialogAddSeries></DialogAddSeries>
+            </div>
           </div>
           <div
             id="tag-picker"
