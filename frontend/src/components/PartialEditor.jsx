@@ -9,8 +9,25 @@ import './PartialEditor.scss';
 export default function PartialEditor({ ...props }) {
   const [editor] = useState(() => withReact(createEditor()));
   const [selectedNodeType, setselectedNodeType] = useState('');
-  const [areHintsShown, setAreHintsShown] = useState(false);
-  const [hintElements, setHintElements] = useState();
+  const [hintElement, setHintElement] = useState(null);
+  const [hints, setHints] = useState({});
+
+  useEffect(() => {
+    const newHints = { ...hints };
+    props.content.forEach((_, i) => {
+      _.children.forEach((__, j) => {
+        if (__.hint) {
+          if (newHints[i]) {
+            newHints[i][j] = __.hint;
+          } else {
+            newHints[i] = {};
+            newHints[i][j] = __.hint;
+          }
+        }
+      });
+    });
+    setHints(newHints);
+  }, [props.content]);
 
   const renderElement = useCallback((props) => {
     switch (props.element.type) {
@@ -52,11 +69,10 @@ export default function PartialEditor({ ...props }) {
     } else {
       if (editor.selection.anchor.offset !== editor.selection.focus.offset) {
         Editor.addMark(editor, 'insetQuestion', true);
-        Editor.addMark(editor, 'hintId', uuid4());
       } else {     
         Transforms.setNodes(
           editor,
-          { insetQuestion: true, hintId: uuid4() },
+          { insetQuestion: true },
           {
             at: selectedNode[1],
             match: (node, path) => (
@@ -66,14 +82,11 @@ export default function PartialEditor({ ...props }) {
         );
       }
     }
-    editor.normalize();
-
-    setTimeout(() => {
-      manageHints();
-    });
   }
 
   function handleCursorChange() {
+    setHintElement(() => null);
+
     if (!editor.selection) {
       return false;
     }
@@ -94,93 +107,107 @@ export default function PartialEditor({ ...props }) {
 
     if (selectedNode && selectedNode[0].insetQuestion) {
       setselectedNodeType('inset-question');
+      setTimeout(() => {
+        showHintInput(selectedNode);
+      });
     } else {
       setselectedNodeType('text');
     }
   }
 
+  function showHintInput(selectedNode) {
+    // let's find the relevant inset question wrapper element
+    // for code formatted partials the structure is a bit different
+    let questionElement;
+    if (document.getElementsByClassName('active-partial')[0]
+      .childNodes[selectedNode[1][0]].className === 'code') {
+      questionElement = document.getElementsByClassName('active-partial')[0]
+        .childNodes[selectedNode[1][0]]
+        .childNodes[0]
+        .childNodes[selectedNode[1][1]];
+    } else {
+      questionElement = document.getElementsByClassName('active-partial')[0]
+        .childNodes[selectedNode[1][0]]
+        .childNodes[selectedNode[1][1]];
+    }
+
+    // get element's coordinates and stuff
+    const coords = questionElement.getBoundingClientRect();
+    const containerCoords
+      = document.getElementsByClassName('active-partial')[0]
+        .getBoundingClientRect();
+    const yDistance = coords.y - containerCoords.y;
+
+    // get hint text from aux array
+    let hintText = '';
+    if (hints[selectedNode[1][0]]) {
+      if (hints[selectedNode[1][0]][selectedNode[1][1]]) {
+        hintText = hints[selectedNode[1][0]][selectedNode[1][1]];
+      }
+    }
+
+    // create the input element for the relevant hint
+    setHintElement(
+      <div
+        className="hint"
+        style={{
+          top: yDistance - 32,
+          left: coords.x - 10.36
+        }}
+        contentEditable={true}
+        suppressContentEditableWarning={true}
+        spellCheck={false}
+        onInput={(e) => handleHintChange(e, selectedNode[1])}
+      >
+        {hintText}
+      </div>
+    );
+  }
+
   function handleChange(value) {
-    manageHints();
     props.onChange(value);
   }
 
-  function handleHintChange(event, hintId) {
-    const newContent = props.content.map((_) => (
-      {
-        ..._,
-        children: _.children.map((__) => {
-          if (__.hintId === hintId) {
-            return {
-              ...__,
-              hint: event.target.textContent
+  function handleHintChange(event, path) {
+    let newContent = props.content.map((_, i) => {
+      if (hints[i]) {
+        return {
+          ..._,
+          children: _.children.map((__, j) => {
+            if (hints[i][j]) {
+              return {
+                ...__,
+                hint: hints[i][j]
+              }
+            } else {
+              return { ...__ };
             }
-          } else {
-            return {
-              ...__
-            }
-          }
-        })
-      }
-    ));
-    props.content = newContent;
-    props.onChange(newContent);
-  }
-
-  useEffect(() => {
-    manageHints();
-  }, [areHintsShown]);
-
-  function manageHints() {
-    setHintElements([]);
-
-    if (!areHintsShown) {
-      return false;
-    }
-
-    const questionsOnPage = Array.from(
-      document
-        .getElementsByClassName('active-partial')[0]
-        .getElementsByClassName('inset-question')
-    );
-    const questionsInContent = {};
-    questionsOnPage.forEach((_) => {
-       props.content.forEach((__) => {
-        const child = __.children.find((___) => (
-          ___.hintId === _.id
-        ));
-        if (child) {
-          questionsInContent[_.id] = child;
-        } else {
-          return false;
+          })
         }
-      });
+      } else {
+        return { ..._ };
+      }
     });
-
-    const containerCoords
-      = document.getElementsByClassName('hints-container')[0]
-        .getBoundingClientRect();
-    let hints = [];
-    questionsOnPage.forEach((_, i) => {
-      const coords = _.getBoundingClientRect();
-      const yDistance = coords.y - containerCoords.y;
-      hints.push(
-        <div
-          className="hint"
-          key={i}
-          style={{
-            top: yDistance - 31,
-            left: coords.x - 14.36
-          }}
-          contentEditable={true}
-          suppressContentEditableWarning={true}
-          spellCheck={false}
-          onBlur={(e) => handleHintChange(e, _.id)}
-        >
-          {questionsInContent[_.id]?.hint}
-        </div>
-      );
+    newContent = newContent.map((_, i) => {
+      if (i === path[0]) {
+        return {
+          ..._,
+          children: _.children.map((__, j) => {
+            if (j === path[1]) {
+              return {
+                ...__,
+                hint: event.target.textContent
+              }
+            } else {
+              return { ...__ };
+            }
+          })
+        }
+      } else {
+        return { ..._ };
+      }
     });
-    setHintElements(hints);
+    props.onChange(newContent);
   }
 
   return (
@@ -224,40 +251,9 @@ export default function PartialEditor({ ...props }) {
             </>
           )
         }
-        {
-          !areHintsShown
-          && (
-            <li
-              className="mr-2 p-2 bg-green shadow-md cursor-pointer
-                hover:opacity-80"
-              onClick={() => setAreHintsShown(true)}
-            >
-              <FaExclamation
-                className="fill-white"
-              />
-            </li>
-          )
-        }
-        {
-          areHintsShown
-          && (
-            <>
-              <li
-                className="relative mr-2 p-2 bg-green shadow-md cursor-pointer
-                  cancel-hints-btn
-                  hover:opacity-80"
-                onClick={() => setAreHintsShown(false)}
-              >
-                <FaExclamation
-                  className="fill-white"
-                />
-              </li>
-            </>
-          )
-        }
       </ul>
       <div className="relative hints-container">
-        {hintElements}
+        {hintElement}
       </div>
       <Slate
         editor={editor}
@@ -294,7 +290,6 @@ export default function PartialEditor({ ...props }) {
               ? 'inset-question'
               : ''}
           `}
-          id={props.leaf.hintId}
         >
           {props.children}
         </span>

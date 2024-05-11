@@ -357,10 +357,10 @@ export default function Edit() {
       if (i === partialIndex) {
         return {
           ..._,
-          content: value
+          content: [...value]
         }
       } else {
-        return _;
+        return { ..._ };
       }
     }));
   }
