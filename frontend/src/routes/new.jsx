@@ -150,7 +150,6 @@ export default function New() {
 
   function addPartial(index, type) {
     cardPartials.splice(index, 0, {
-      partial_type: type,
       content: [{
         type,
         children: [{ text: '' }]
@@ -229,15 +228,28 @@ export default function New() {
     }
   }, [card.id]);
 
-  function handlePartialChange(value, partialIndex) {
+  function handlePartialContentChange(value, partialIndex) {
     setCardPartials(cardPartials.map((_, i) => {
       if (i === partialIndex) {
         return {
           ..._,
-          content: value
+          content: [...value]
         }
       } else {
-        return _;
+        return { ..._ };
+      }
+    }));
+  }
+
+  function handlePartialIsPromptChange(value, partialIndex) {
+    setCardPartials(cardPartials.map((_, i) => {
+      if (i === partialIndex) {
+        return {
+          ..._,
+          is_prompt: value
+        }
+      } else {
+        return { ..._ };
       }
     }));
   }
@@ -257,6 +269,11 @@ export default function New() {
         ))}
       </>
     );
+  }
+
+  function handlePartialDelete() {
+    setActivePartial(null);
+    setCardPartials(cardPartials.filter((_, i) => i !== activePartial));
   }
 
   return (
@@ -347,10 +364,21 @@ export default function New() {
                 {activePartial === partialIndex && (
                   <PartialEditor
                     content={_.content}
+                    isPrompt={_.is_prompt}
                     onClick={() => setActivePartial(partialIndex)}
-                    onChange={
-                      (value) => handlePartialChange(value, partialIndex)
+                    onContentChange={
+                      (value) => handlePartialContentChange(
+                        value,
+                        partialIndex
+                      )
                     }
+                    onIsPromptChange={(value) =>
+                      handlePartialIsPromptChange(
+                        value,
+                        partialIndex
+                      )
+                    }
+                    onDelete={handlePartialDelete}
                   />
                 )}
                 {activePartial !== partialIndex && (

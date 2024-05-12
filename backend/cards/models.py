@@ -91,21 +91,16 @@ class Card(models.Model):
         ordering = ['pk']
 
 
-class CardPartialType(models.TextChoices):
-    TEXT = 'text'
-    CODE = 'code'
-
-
 class CardPartial(models.Model):
     card = models.ForeignKey(
         Card,
         on_delete=models.CASCADE,
         related_name='card_partials'
     )
-    partial_type = models.CharField(
-        max_length=20,
-        choices=CardPartialType.choices,
-        default=CardPartialType.TEXT
+    is_prompt = models.BooleanField(
+        default=False,
+        blank=False,
+        null=False
     )
     content = models.JSONField()
     position = models.PositiveSmallIntegerField(

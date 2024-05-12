@@ -72,7 +72,7 @@ pre.code * {
   letter-spacing: -0.05em;
 }
 
-.cancel-inset-question-btn, .cancel-hints-btn {
+.cancel-inset-question-btn, .toggle-off-is-prompt-btn {
   &::after {
     content: '';
     position: absolute;

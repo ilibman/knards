@@ -18,7 +18,7 @@ class CardAdmin(admin.ModelAdmin):
     list_per_page = 25
 
 class CardPartialAdmin(admin.ModelAdmin):
-    list_display = ['card', 'partial_type', 'position']
+    list_display = ['card', 'is_prompt', 'position']
     search_fields = ['content',]
     list_per_page = 25
     

@@ -238,7 +238,6 @@ export default function Edit() {
 
   function addPartial(index, type) {
     cardPartials.splice(index, 0, {
-      partial_type: type,
       content: [{
         type,
         children: [{ text: '' }]
@@ -352,12 +351,25 @@ export default function Edit() {
     });
   }
 
-  function handlePartialChange(value, partialIndex) {
+  function handlePartialContentChange(value, partialIndex) {
     setCardPartials(cardPartials.map((_, i) => {
       if (i === partialIndex) {
         return {
           ..._,
           content: [...value]
+        }
+      } else {
+        return { ..._ };
+      }
+    }));
+  }
+
+  function handlePartialIsPromptChange(value, partialIndex) {
+    setCardPartials(cardPartials.map((_, i) => {
+      if (i === partialIndex) {
+        return {
+          ..._,
+          is_prompt: value
         }
       } else {
         return { ..._ };
@@ -503,9 +515,19 @@ export default function Edit() {
                     {activePartial === partialIndex && (
                       <PartialEditor
                         content={_.content}
+                        isPrompt={_.is_prompt}
                         onClick={() => setActivePartial(partialIndex)}
-                        onChange={
-                          (value) => handlePartialChange(value, partialIndex)
+                        onContentChange={
+                          (value) => handlePartialContentChange(
+                            value,
+                            partialIndex
+                          )
+                        }
+                        onIsPromptChange={(value) =>
+                          handlePartialIsPromptChange(
+                            value,
+                            partialIndex
+                          )
                         }
                         onDelete={handlePartialDelete}
                       />

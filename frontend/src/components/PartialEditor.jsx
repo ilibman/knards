@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createEditor, Editor, Transforms } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
-import uuid4 from 'uuid4';
 import { FaQuestion, FaExclamation } from 'react-icons/fa';
 import { IoMdTrash } from 'react-icons/io'
 import './PartialEditor.scss';
@@ -164,8 +163,12 @@ export default function PartialEditor({ ...props }) {
     );
   }
 
-  function handleChange(value) {
-    props.onChange(value);
+  function handleContentChange(value) {
+    props.onContentChange(value);
+  }
+
+  function toggleIsPrompt(value) {
+    props.onIsPromptChange(value);
   }
 
   function handleHintChange(event, path) {
@@ -207,7 +210,7 @@ export default function PartialEditor({ ...props }) {
         return { ..._ };
       }
     });
-    props.onChange(newContent);
+    props.onContentChange(newContent);
   }
 
   return (
@@ -220,6 +223,32 @@ export default function PartialEditor({ ...props }) {
         >
           <IoMdTrash />
         </li>
+        {
+          props.isPrompt
+          ? (
+            <li
+              className="relative mr-2 p-2 bg-blue shadow-md cursor-pointer
+                toggle-off-is-prompt-btn
+                hover:opacity-80"
+              onClick={() => toggleIsPrompt(false)}
+            >
+              <FaExclamation
+                className="fill-white"
+              />
+            </li>
+          )
+          : (
+            <li
+              className="mr-2 p-2 bg-blue shadow-md cursor-pointer
+                hover:opacity-80"
+              onClick={() => toggleIsPrompt(true)}
+            >
+              <FaExclamation
+                className="fill-white"
+              />
+            </li>
+          )
+        }
         {
           selectedNodeType === 'text'
           && (
@@ -258,7 +287,7 @@ export default function PartialEditor({ ...props }) {
       <Slate
         editor={editor}
         initialValue={props.content}
-        onChange={handleChange}
+        onChange={handleContentChange}
       >
         <Editable
           className="p-4 bg-brown-light shadow-md
