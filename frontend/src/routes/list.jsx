@@ -11,6 +11,7 @@ import {
 import SearchIcon from '@rsuite/icons/Search';
 import AuthContext from '../context/AuthProvider';
 import api from '../api';
+import ListStatsAndRevise from '../components/ListStatsAndRevise';
 
 export default function List() {
   const { authTokens } = useContext(AuthContext);
@@ -271,7 +272,12 @@ export default function List() {
           </InputGroup.Button>
         </InputGroup>
       </div>
-      <div className="">
+      <ListStatsAndRevise
+        cards={cards}
+        tags={tags}
+      >
+      </ListStatsAndRevise>
+      <div>
         {(
           isCardsLoading
           || isCardSeriesLoading
