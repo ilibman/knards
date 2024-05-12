@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { createEditor, Editor, Transforms } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { FaQuestion, FaExclamation } from 'react-icons/fa';
@@ -7,26 +7,8 @@ import './PartialEditor.scss';
 
 export default function PartialEditor({ ...props }) {
   const [editor] = useState(() => withReact(createEditor()));
-  const [selectedNodeType, setselectedNodeType] = useState('');
+  const [selectedNodeType, setSelectedNodeType] = useState('');
   const [hintElement, setHintElement] = useState(null);
-  const [hints, setHints] = useState({});
-
-  useEffect(() => {
-    const newHints = { ...hints };
-    props.content.forEach((_, i) => {
-      _.children.forEach((__, j) => {
-        if (__.hint) {
-          if (newHints[i]) {
-            newHints[i][j] = __.hint;
-          } else {
-            newHints[i] = {};
-            newHints[i][j] = __.hint;
-          }
-        }
-      });
-    });
-    setHints(newHints);
-  }, [props.content]);
 
   const renderElement = useCallback((props) => {
     switch (props.element.type) {
@@ -100,17 +82,17 @@ export default function PartialEditor({ ...props }) {
       editor.selection.anchor.path[0] !== editor.selection.focus.path[0]
       || editor.selection.anchor.path[1] !== editor.selection.focus.path[1]
     ) {
-      setselectedNodeType('');
+      setSelectedNodeType('');
       return false;
     }
 
     if (selectedNode && selectedNode[0].insetQuestion) {
-      setselectedNodeType('inset-question');
+      setSelectedNodeType('inset-question');
       setTimeout(() => {
         showHintInput(selectedNode);
       });
     } else {
-      setselectedNodeType('text');
+      setSelectedNodeType('text');
     }
   }
 
@@ -137,14 +119,6 @@ export default function PartialEditor({ ...props }) {
         .getBoundingClientRect();
     const yDistance = coords.y - containerCoords.y;
 
-    // get hint text from aux array
-    let hintText = '';
-    if (hints[selectedNode[1][0]]) {
-      if (hints[selectedNode[1][0]][selectedNode[1][1]]) {
-        hintText = hints[selectedNode[1][0]][selectedNode[1][1]];
-      }
-    }
-
     // create the input element for the relevant hint
     setHintElement(
       <div
@@ -158,13 +132,9 @@ export default function PartialEditor({ ...props }) {
         spellCheck={false}
         onInput={(e) => handleHintChange(e, selectedNode[1])}
       >
-        {hintText}
+        {selectedNode[0].hint}
       </div>
     );
-  }
-
-  function handleContentChange(value) {
-    props.onContentChange(value);
   }
 
   function toggleIsPrompt(value) {
@@ -172,45 +142,11 @@ export default function PartialEditor({ ...props }) {
   }
 
   function handleHintChange(event, path) {
-    let newContent = props.content.map((_, i) => {
-      if (hints[i]) {
-        return {
-          ..._,
-          children: _.children.map((__, j) => {
-            if (hints[i][j]) {
-              return {
-                ...__,
-                hint: hints[i][j]
-              }
-            } else {
-              return { ...__ };
-            }
-          })
-        }
-      } else {
-        return { ..._ };
-      }
-    });
-    newContent = newContent.map((_, i) => {
-      if (i === path[0]) {
-        return {
-          ..._,
-          children: _.children.map((__, j) => {
-            if (j === path[1]) {
-              return {
-                ...__,
-                hint: event.target.textContent
-              }
-            } else {
-              return { ...__ };
-            }
-          })
-        }
-      } else {
-        return { ..._ };
-      }
-    });
-    props.onContentChange(newContent);
+    Transforms.setNodes(
+      editor,
+      { hint: event.target.textContent },
+      { at: path }
+    );
   }
 
   return (
@@ -287,7 +223,7 @@ export default function PartialEditor({ ...props }) {
       <Slate
         editor={editor}
         initialValue={props.content}
-        onChange={handleContentChange}
+        onChange={props.onContentChange}
       >
         <Editable
           className="p-4 bg-brown-light shadow-md
