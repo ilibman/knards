@@ -21,7 +21,7 @@ const ListStatsAndRevise = ({ ...props }) => {
     });
 
     setTagStatistics(tagStatistics);
-  }, [props]);
+  }, [props.cards, props.tags]);
 
   return (
     <Accordion.Root
@@ -38,7 +38,10 @@ const ListStatsAndRevise = ({ ...props }) => {
           </div>
           <ul className="ml-5">
             {Object.values(tagStatistics).map((_, i) => (
-              <li className="text-white">{Object.keys(tagStatistics)[i]}: {_.length}</li>
+              <li
+                className="text-white"
+                key={i}
+              >{Object.keys(tagStatistics)[i]}: {_.length}</li>
             ))}
           </ul>
         </AccordionContent>

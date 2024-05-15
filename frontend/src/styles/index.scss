@@ -88,3 +88,40 @@ h6 {
   position: absolute;
   left: -9999px;
 }
+
+.kn-base-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+
+  border: 2px solid var(--color-black);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 2px -1px var(--color-input-shadow);
+
+  cursor: pointer;
+
+  &:hover, &:active, &:focus {
+    border: 2px solid var(--color-active-partial-border);
+    box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
+  }
+}
+
+.dialog-reorder-card-in-series {
+  #items {
+    .sortable-chosen {
+      &:not(:first-child) {
+        margin-top: -1px;
+      }
+
+      background-color: var(--color-brown-light);
+      border-top: 1px solid var(--color-black);
+      border-bottom: 1px solid var(--color-black);
+    }
+
+    .sortable-drag {
+      border-right: 1px solid var(--color-black);
+      border-left: 1px solid var(--color-black);
+    }
+  }
+}

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import {
   Input,
   InputGroup,
-  SelectPicker,
+  InputPicker,
   TagPicker,
 } from 'rsuite';
 import { FaCode, FaCheck } from 'react-icons/fa';
@@ -40,10 +40,14 @@ export default function New() {
             withCredentials: true
           }
         );
+        const cardSeriesMap = {};
+        response.data.map((_) => (
+          cardSeriesMap[_.id] = { ..._ }
+        ));
         setSeriesPickerData(
           response.data.map((_) => ({ label: _.name, value: _.id }))
         );
-        setCardSeries(response.data);
+        setCardSeries(cardSeriesMap);
       } catch (error) {
         if (!error.response) {
           console.error(error.message);
@@ -84,11 +88,51 @@ export default function New() {
     fetchTags();
   }, []);
 
-  function handleSeriesPickerChange(value) {
+  async function handleSeriesPickerChange(value) {
+    if (typeof value === 'number') {
+      setCard({
+        ...card,
+        card_series: value
+      });
+    } else if (typeof value === 'string') {
+      try {
+        const response = await api.post(
+          'api/cards/card-series/',
+          { name: value },
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`,
+              'X-CSRFToken': document.cookie.replace(
+                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+              )
+            },
+            withCredentials: true
+          }
+        );
+        const cardSeriesMap = { ...cardSeries };
+        cardSeriesMap[response.data.id] = { ...response.data };
+        setCardSeries(cardSeriesMap);
+        setSeriesPickerData(
+          seriesPickerData.concat([{ label: value, value: response.data.id }])
+        );
+        setCard({
+          ...card,
+          n_in_series: 1,
+          card_series: response.data.id
+        });
+      } catch (error) {
+        if (!error.response) {
+          console.error(error.message);
+        }
+      }
+    }
+  }
+
+  function handleClearSeries() {
     setCard({
       ...card,
-      card_series: value
-    })
+      card_series: null
+    });
   }
 
   function handleEnterTags(value) {
@@ -195,6 +239,7 @@ export default function New() {
 
   useEffect(() => {
     if (card.id) {
+      // save partials
       cardPartials.forEach(async (_, i) => {
         try {
           await api.post(
@@ -316,12 +361,15 @@ export default function New() {
             <label
               className="mx-3 text-white font-base font-semibold text-lg"
             >Series:</label>
-            <SelectPicker
-              data={seriesPickerData}
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              value={cardSeries[card.card_series]?.id}
-              onChange={handleSeriesPickerChange}
-            />
+            <div className="flex">
+              <InputPicker
+                data={seriesPickerData}
+                style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+                value={cardSeries[card.card_series]?.id}
+                onChange={handleSeriesPickerChange}
+                onClean={handleClearSeries}
+              />
+            </div>
           </div>
           <div
             id="tag-picker"
@@ -347,15 +395,13 @@ export default function New() {
               >
                 <ul className="flex flex-row mb-2">
                   <li
-                    className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                      hover:opacity-80"
+                    className="mr-2 p-2 bg-white kn-base-btn"
                     onClick={() => addPartial(partialIndex, 'text')}
                   >
                     <IoText />
                   </li>
                   <li
-                    className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                      hover:opacity-80"
+                    className="mr-2 p-2 bg-white kn-base-btn"
                     onClick={() => addPartial(partialIndex, 'code')}
                   >
                     <FaCode />
@@ -392,24 +438,21 @@ export default function New() {
             ))}
             <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">
               <li
-                className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                  hover:opacity-80"
+                className="mr-2 p-2 bg-white kn-base-btn"
                 onClick={() => addPartial(cardPartials.length, 'text')}
               >
                 <IoText />
               </li>
               <li
-                className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                  hover:opacity-80"
+                className="mr-2 p-2 bg-white kn-base-btn"
                 onClick={() => addPartial(cardPartials.length, 'code')}
               >
                 <FaCode />
               </li>
             </ul>
             <div
-              className="flex justify-center mb-2.5 ml-2.5 p-2 w-[72px]
-                bg-green shadow-md
-                cursor-pointer hover:opacity-80"
+              className="mb-2.5 ml-2.5 w-[80px] h-[72px]
+                bg-green kn-base-btn"
               onClick={() => saveCard()}
             >
               <FaCheck className="fill-white" />

@@ -10,7 +10,7 @@ import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 import AuthContext from '../context/AuthProvider';
 import PartialEditor from '../components/PartialEditor';
-import DialogAddSeries from '../components/dialogs/DialogAddSeries';
+import DialogReorderCardsInSeries from '../components/dialogs/DialogReorderCardsInSeries';
 import api from '../api';
 
 export default function Edit() {
@@ -20,14 +20,19 @@ export default function Edit() {
 
   const [card, setCard] = useState({});
   const [cardSeries, setCardSeries] = useState({});
+  const [cardsFromSeries, setCardsFromSeries] = useState([]);
   const [tags, setTags] = useState({});
   const [cardPartials, setCardPartials] = useState([]);
 
   const [seriesPickerData, setSeriesPickerData] = useState([]);
   const [tagPickerData, setTagPickerData] = useState([]);
 
+  const [isCardInSeriesOrderChanged, setIsCardInSeriesOrderChanged]
+    = useState(false);
+
   const [isCardLoading, setIsCardLoading] = useState(true);
   const [isCardSeriesLoading, setIsCardSeriesLoading] = useState(true);
+  const [isCardsFromSeriesLoading, setIsCardsFromSeriesLoading] = useState(true);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
   const [isCardPartialsLoading, setIsCardPartialsLoading] = useState(true);
   const [isCardSaving, setIsCardSaving] = useState(false);
@@ -80,6 +85,10 @@ export default function Edit() {
           response.data.map((_) => ({ label: _.name, value: _.id }))
         );
         setCardSeries(cardSeriesMap);
+        
+        if (card.card_series) {
+          fetchCardsFromSeries(card.card_series);
+        }
       } catch (error) {
         if (!error.response) {
           console.error(error.message);
@@ -146,12 +155,91 @@ export default function Edit() {
     fetchCardPartials();
   }, [card.id]);
 
-  function handleSeriesPickerChange(value) {
+  async function handleSeriesPickerChange(value) {
+    if (typeof value === 'number') {
+      setCard({
+        ...card,
+        card_series: value
+      });
+  
+      fetchCardsFromSeries(value);
+    } else if (typeof value === 'string') {
+      try {
+        const response = await api.post(
+          'api/cards/card-series/',
+          { name: value },
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`,
+              'X-CSRFToken': document.cookie.replace(
+                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+              )
+            },
+            withCredentials: true
+          }
+        );
+        const cardSeriesMap = { ...cardSeries };
+        cardSeriesMap[response.data.id] = { ...response.data };
+        setCardSeries(cardSeriesMap);
+        setSeriesPickerData(
+          seriesPickerData.concat([{ label: value, value: response.data.id }])
+        );
+        setCard({
+          ...card,
+          n_in_series: 1,
+          card_series: response.data.id
+        });
+        setCardsFromSeries([card]);
+      } catch (error) {
+        if (!error.response) {
+          console.error(error.message);
+        }
+      }
+    }
+  }
+
+  function handleClearSeries() {
     setCard({
       ...card,
-      card_series: value
+      card_series: null
     });
+    setCardsFromSeries([]);
   }
+
+  const fetchCardsFromSeries = async (seriesId) => {
+    setIsCardsFromSeriesLoading(true);
+
+    try {
+      const response = await api.get(
+        `api/cards/cards/?series=${seriesId}`,
+        {
+          headers: {
+            Authorization: `JWT ${authTokens.access}`
+          },
+          withCredentials: true
+        }
+      );
+      if (!response.data.find((_) => _.id === card.id)) {
+        const newCardsFromSeries = response.data.concat([card]).sort(
+          (a, b) => a.n_in_series - b.n_in_series
+        ).map((_, i) => (
+          {
+            ..._,
+            n_in_series: i + 1
+          }
+        ));
+        setCardsFromSeries(newCardsFromSeries);
+      } else {
+        setCardsFromSeries(response.data);
+      }
+    } catch (error) {
+      if (!error.response) {
+        console.error(error.message);
+      }
+    } finally {
+      setIsCardsFromSeriesLoading(false);
+    }
+  };
 
   useEffect(() => {
     setTagPickerData(
@@ -279,6 +367,31 @@ export default function Edit() {
         setIsCardSaving(false);
         navigate('/list');
       }
+    }
+
+    if (isCardInSeriesOrderChanged) {
+      cardsFromSeries.forEach(async (_) => {
+        // save card order in series
+        try {
+          await api.patch(
+            `api/cards/cards/${_.id}/`,
+            { n_in_series: _.n_in_series },
+            {
+              headers: {
+                Authorization: `JWT ${authTokens.access}`,
+                'X-CSRFToken': document.cookie.replace(
+                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+                )
+              },
+              withCredentials: true
+            }
+          );
+        } catch (error) {
+          if (!error.response) {
+            console.error(error.message);
+          }
+        }
+      });
     }
 
     // save partials
@@ -467,8 +580,17 @@ export default function Edit() {
                 style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
                 value={cardSeries[card.card_series]?.id}
                 onChange={handleSeriesPickerChange}
+                onClean={handleClearSeries}
               />
-              <DialogAddSeries></DialogAddSeries>
+              <DialogReorderCardsInSeries
+                series={cardSeries[card.card_series]}
+                cardsFromSeries={cardsFromSeries}
+                onSave={(value) => {
+                  setCardsFromSeries(value);
+                  setIsCardInSeriesOrderChanged(true);
+                }}
+              >
+              </DialogReorderCardsInSeries>
             </div>
           </div>
           <div
@@ -498,15 +620,13 @@ export default function Edit() {
                   >
                     <ul className="flex flex-row mb-2">
                       <li
-                        className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                          hover:opacity-80"
+                        className="mr-2 bg-white kn-base-btn"
                         onClick={() => addPartial(partialIndex, 'text')}
                       >
                         <IoText />
                       </li>
                       <li
-                        className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                          hover:opacity-80"
+                        className="mr-2 bg-white kn-base-btn"
                         onClick={() => addPartial(partialIndex, 'code')}
                       >
                         <FaCode />
@@ -543,24 +663,21 @@ export default function Edit() {
                 ))}
                 <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">
                   <li
-                    className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                      hover:opacity-80"
+                    className="mr-2 bg-white kn-base-btn"
                     onClick={() => addPartial(cardPartials.length, 'text')}
                   >
                     <IoText />
                   </li>
                   <li
-                    className="mr-2 p-2 bg-white shadow-md cursor-pointer
-                      hover:opacity-80"
+                    className="mr-2 bg-white kn-base-btn"
                     onClick={() => addPartial(cardPartials.length, 'code')}
                   >
                     <FaCode />
                   </li>
                 </ul>
                 <div
-                  className="flex justify-center mb-2.5 ml-2.5 p-2 w-[72px]
-                    bg-green shadow-md
-                    cursor-pointer hover:opacity-80"
+                  className="mb-2.5 ml-2.5 w-[80px] h-[72px]
+                    bg-green kn-base-btn"
                   onClick={() => saveChanges()}
                 >
                   <FaCheck className="fill-white" />

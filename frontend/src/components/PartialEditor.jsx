@@ -153,8 +153,7 @@ export default function PartialEditor({ ...props }) {
     <>
       <ul className="flex flex-row mb-2">
         <li
-          className="mr-2 p-2 bg-red shadow-md cursor-pointer
-            hover:opacity-80"
+          className="mr-2 bg-red kn-base-btn"
           onClick={() => props.onDelete()}
         >
           <IoMdTrash />
@@ -163,9 +162,8 @@ export default function PartialEditor({ ...props }) {
           props.isPrompt
           ? (
             <li
-              className="relative mr-2 p-2 bg-blue shadow-md cursor-pointer
-                toggle-off-is-prompt-btn
-                hover:opacity-80"
+              className="relative mr-2 bg-blue
+                kn-base-btn toggle-off-is-prompt-btn"
               onClick={() => toggleIsPrompt(false)}
             >
               <FaExclamation
@@ -175,8 +173,7 @@ export default function PartialEditor({ ...props }) {
           )
           : (
             <li
-              className="mr-2 p-2 bg-blue shadow-md cursor-pointer
-                hover:opacity-80"
+              className="mr-2 bg-blue kn-base-btn"
               onClick={() => toggleIsPrompt(true)}
             >
               <FaExclamation
@@ -189,8 +186,7 @@ export default function PartialEditor({ ...props }) {
           selectedNodeType === 'text'
           && (
             <li
-              className="mr-2 p-2 bg-blue shadow-md cursor-pointer
-                hover:opacity-80"
+              className="mr-2 bg-blue kn-base-btn"
               onClick={toggleInsetQuestion}
             >
               <FaQuestion
@@ -204,9 +200,8 @@ export default function PartialEditor({ ...props }) {
           && (
             <>
               <li
-                className="relative mr-2 p-2 bg-blue shadow-md cursor-pointer
-                  cancel-inset-question-btn
-                  hover:opacity-80"
+                className="relative mr-2 bg-blue
+                  kn-base-btn cancel-inset-question-btn"
                 onClick={toggleInsetQuestion}
               >
                 <FaQuestion
