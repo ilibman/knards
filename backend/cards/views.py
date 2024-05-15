@@ -30,11 +30,18 @@ class CardSeriesViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        # clean up unused series
+        card_series = CardSeries.objects.filter(owner=self.request.user)
+        for series in card_series:
+            cards = Card.objects.filter(card_series=series.id)
+            if len(cards) == 0:
+                series.delete()
+
         serializer.save(owner=self.request.user)
 
 class TagsViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
-    queryset = Tag.objects.order_by('pk')
+    queryset = Tag.objects.order_by('name')
     lookup_field = 'pk'
     
 class CardsViewSet(viewsets.ModelViewSet):
@@ -70,10 +77,14 @@ class CardsViewSet(viewsets.ModelViewSet):
                     else:
                         queryset &= queryset.filter(tags__in=tag)
             
-        return queryset.distinct().order_by('created_at')
+        return queryset.distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        cards = Card.objects.filter(
+            card_series=self.request.data.get('card_series', None)
+        )
+
+        serializer.save(owner=self.request.user, n_in_series=len(cards) + 1)
 
 class CardPartialsViewSet(viewsets.ModelViewSet):
     serializer_class = CardPartialSerializer
