@@ -7,6 +7,7 @@ import './PartialEditor.scss';
 
 export default function PartialEditor({ ...props }) {
   const [editor] = useState(() => withReact(createEditor()));
+  const [editorAux] = useState(() => withReact(createEditor()));
   const [selectedNodeType, setSelectedNodeType] = useState('');
   const [hintElement, setHintElement] = useState(null);
 
@@ -148,7 +149,7 @@ export default function PartialEditor({ ...props }) {
       { at: path }
     );
   }
-
+  
   return (
     <>
       <ul className="flex flex-row mb-2">
@@ -215,20 +216,39 @@ export default function PartialEditor({ ...props }) {
       <div className="relative hints-container">
         {hintElement}
       </div>
-      <Slate
-        editor={editor}
-        initialValue={props.content}
-        onChange={props.onContentChange}
-      >
-        <Editable
-          className="p-4 bg-brown-light shadow-md
-            outline-none partial-editor active-partial"
-          renderElement={renderElement}
-          renderLeaf={renderLeaf}
-          spellCheck={false}
-          onClick={handleCursorChange}
-        />
-      </Slate>
+      <div className="flex partial-editors-wrapper">
+        <Slate
+          editor={editor}
+          initialValue={props.content}
+          onChange={props.onContentChange}
+        >
+          <Editable
+            className="flex-1 p-4 bg-brown-light shadow-md
+              outline-none partial-editor active-partial"
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            spellCheck={false}
+            onClick={handleCursorChange}
+          />
+        </Slate>
+        {props.isPrompt
+          && (
+            <Slate
+              editor={editorAux}
+              initialValue={props.promptInitialContent}
+              onChange={props.onPromptInitialContentChange}
+            >
+              <Editable
+                className="flex-1 ml-2 p-4 !bg-green outline-none
+                  partial-editor active-partial"
+                renderElement={renderElement}
+                renderLeaf={renderLeaf}
+                spellCheck={false}
+              />
+            </Slate>
+          )
+        }
+      </div>
     </>
   );
 

@@ -330,6 +330,10 @@ export default function Edit() {
         type,
         children: [{ text: '' }]
       }],
+      prompt_initial_content: [{
+        type,
+        children: [{ text: '' }]
+      }],
       card: card.id
     });
     setCardPartials(cardPartials.map((_, i) => (
@@ -490,6 +494,19 @@ export default function Edit() {
     }));
   }
 
+  function handlePromptInitialContentChange(value, partialIndex) {
+    setCardPartials(cardPartials.map((_, i) => {
+      if (i === partialIndex) {
+        return {
+          ..._,
+          prompt_initial_content: value
+        }
+      } else {
+        return { ..._ };
+      }
+    }));
+  }
+
   function renderReadOnlyPartial(content) {
     return (
       <>
@@ -636,6 +653,7 @@ export default function Edit() {
                       <PartialEditor
                         content={_.content}
                         isPrompt={_.is_prompt}
+                        promptInitialContent={_.prompt_initial_content}
                         onClick={() => setActivePartial(partialIndex)}
                         onContentChange={
                           (value) => handlePartialContentChange(
@@ -645,6 +663,12 @@ export default function Edit() {
                         }
                         onIsPromptChange={(value) =>
                           handlePartialIsPromptChange(
+                            value,
+                            partialIndex
+                          )
+                        }
+                        onPromptInitialContentChange={(value) =>
+                          handlePromptInitialContentChange(
                             value,
                             partialIndex
                           )

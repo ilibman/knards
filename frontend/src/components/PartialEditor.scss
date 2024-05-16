@@ -65,6 +65,17 @@
   }
 }
 
+.partial-editors-wrapper {
+  @media screen and (max-width: 1440px) {
+    flex-direction: column;
+
+    & > :last-child {
+      margin-top: 0.5rem;
+      margin-left: 0;
+    }
+  }
+}
+
 pre.code * {
   font-family: var(--font-code);
   font-size: 1rem;
@@ -72,13 +83,25 @@ pre.code * {
   letter-spacing: -0.05em;
 }
 
-.cancel-inset-question-btn, .toggle-off-is-prompt-btn {
+.cancel-inset-question-btn {
   &::after {
     content: '';
     position: absolute;
     top: 15px;
     left: 6px;
     width: 19px;
+    border: 1px solid var(--color-white);
+    transform: rotate(45deg);
+  }
+}
+
+.toggle-off-is-prompt-btn {
+  &::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 6px;
+    width: 20px;
     border: 1px solid var(--color-white);
     transform: rotate(45deg);
   }

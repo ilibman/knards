@@ -103,6 +103,7 @@ class CardPartial(models.Model):
         null=False
     )
     content = models.JSONField()
+    prompt_initial_content = models.JSONField()
     position = models.PositiveSmallIntegerField(
         default=1,
         blank=False,

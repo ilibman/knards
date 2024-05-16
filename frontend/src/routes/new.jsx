@@ -198,6 +198,10 @@ export default function New() {
         type,
         children: [{ text: '' }]
       }],
+      prompt_initial_content: [{
+        type,
+        children: [{ text: '' }]
+      }]
     });
     setCardPartials(cardPartials.map((_, i) => (
       {
@@ -292,6 +296,19 @@ export default function New() {
         return {
           ..._,
           is_prompt: value
+        }
+      } else {
+        return { ..._ };
+      }
+    }));
+  }
+
+  function handlePromptInitialContentChange(value, partialIndex) {
+    setCardPartials(cardPartials.map((_, i) => {
+      if (i === partialIndex) {
+        return {
+          ..._,
+          prompt_initial_content: value
         }
       } else {
         return { ..._ };
@@ -411,6 +428,7 @@ export default function New() {
                   <PartialEditor
                     content={_.content}
                     isPrompt={_.is_prompt}
+                    promptInitialContent={_.prompt_initial_content}
                     onClick={() => setActivePartial(partialIndex)}
                     onContentChange={
                       (value) => handlePartialContentChange(
@@ -420,6 +438,12 @@ export default function New() {
                     }
                     onIsPromptChange={(value) =>
                       handlePartialIsPromptChange(
+                        value,
+                        partialIndex
+                      )
+                    }
+                    onPromptInitialContentChange={(value) =>
+                      handlePromptInitialContentChange(
                         value,
                         partialIndex
                       )
