@@ -152,7 +152,7 @@ export default function PartialEditor({ ...props }) {
   
   return (
     <>
-      <ul className="flex flex-row mb-2">
+      <ul className="flex flex-row mb-2.5">
         <li
           className="mr-2 bg-red kn-base-btn"
           onClick={() => props.onDelete()}

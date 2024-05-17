@@ -635,7 +635,7 @@ export default function Edit() {
                     className="pt-2.5 pr-2.5 pl-2.5"
                     key={partialIndex}
                   >
-                    <ul className="flex flex-row mb-2">
+                    <ul className="flex flex-row mb-2.5">
                       <li
                         className="mr-2 bg-white kn-base-btn"
                         onClick={() => addPartial(partialIndex, 'text')}
@@ -685,26 +685,28 @@ export default function Edit() {
                     )}
                   </div>
                 ))}
-                <ul className="pt-2.5 pr-2.5 pl-2.5 flex flex-row mb-2">
-                  <li
-                    className="mr-2 bg-white kn-base-btn"
-                    onClick={() => addPartial(cardPartials.length, 'text')}
+                <div className="inline-flex flex-col w-min">
+                  <ul className="m-2.5 mr-0 flex flex-row">
+                    <li
+                      className="mr-2 bg-white kn-base-btn"
+                      onClick={() => addPartial(cardPartials.length, 'text')}
+                    >
+                      <IoText />
+                    </li>
+                    <li
+                      className="bg-white kn-base-btn"
+                      onClick={() => addPartial(cardPartials.length, 'code')}
+                    >
+                      <FaCode />
+                    </li>
+                  </ul>
+                  <div
+                    className="mb-2.5 ml-2.5 h-[72px]
+                      bg-green kn-base-btn"
+                    onClick={() => saveChanges()}
                   >
-                    <IoText />
-                  </li>
-                  <li
-                    className="mr-2 bg-white kn-base-btn"
-                    onClick={() => addPartial(cardPartials.length, 'code')}
-                  >
-                    <FaCode />
-                  </li>
-                </ul>
-                <div
-                  className="mb-2.5 ml-2.5 w-[80px] h-[72px]
-                    bg-green kn-base-btn"
-                  onClick={() => saveChanges()}
-                >
-                  <FaCheck className="fill-white" />
+                    <FaCheck className="fill-white" />
+                  </div>
                 </div>
               </div>
             )}
