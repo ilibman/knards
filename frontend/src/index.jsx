@@ -17,6 +17,7 @@ import New from './routes/new';
 import Edit from './routes/edit';
 import List from './routes/list';
 import Explore from './routes/explore';
+import Revise from './routes/revise';
 
 const router = createBrowserRouter([
   {
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
           {
             path: 'explore',
             element: <Explore />,
+          },
+          {
+            path: 'revise/:id',
+            element: <Revise />,
           },
         ]
       }
