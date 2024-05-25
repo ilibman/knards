@@ -135,11 +135,6 @@ div.hint {
 }
 
 .revise-partial-editor {
-  div, p, span:not(.inset-question) {
-    pointer-events: none;
-    user-select: none;
-  }
-
   span.inset-question {
     &:focus {
       & + .revise-hint {
@@ -150,7 +145,7 @@ div.hint {
 
   span.revise-hint {
     position: absolute;
-    top: -33px;
+    top: -30px;
     left: 0;
 
     display: none;
@@ -161,9 +156,15 @@ div.hint {
     color: var(--color-inset-question-text);
     font-weight: 600;
     line-height: 1.4;
+
+    white-space: nowrap;
   
     background-color: var(--color-green);
     border: 2px solid var(--color-green);
     border-radius: 2px;
+  }
+
+  .answer-partial .revise-hint {
+    display: none !important;
   }
 }
