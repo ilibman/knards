@@ -92,7 +92,7 @@ export default function Header() {
         onOpenChange={setMobileMenuOpen}
       >
         <Dialog.Portal>
-          <Dialog.Content className="fixed z-50 top-0 left-0 w-full h-full bg-brown">
+          <Dialog.Content className="fixed z-[101] top-0 left-0 w-full h-full bg-brown">
             <div className="flex pt-1 px-3">
               <nav
                 className="flex flex-col justify-center w-full space-y-8"

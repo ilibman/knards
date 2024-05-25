@@ -1,10 +1,17 @@
-import { forwardRef, useState, useEffect } from 'react';
+import { forwardRef, useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import * as Accordion from '@radix-ui/react-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
+import AuthContext from '../context/AuthProvider';
+import api from '../api';
 
 const ListStatsAndRevise = ({ ...props }) => {
+  const { authTokens } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [tagStatistics, setTagStatistics] = useState({});
+  const [cardset, setCardset] = useState([]);
+  const [isCardScoresLoading, setIsCardScoresLoading] = useState(false);
 
   useEffect(() => {
     const tagStatistics = {};
@@ -23,16 +30,125 @@ const ListStatsAndRevise = ({ ...props }) => {
     setTagStatistics(tagStatistics);
   }, [props.cards, props.tags]);
 
+  function runRevise() {
+    setIsCardScoresLoading(true);
+    const today = new Date();
+    
+    const cards = props.cards.map((_) => (
+      {
+        id: _.id,
+        title: _.title,
+        series_id: _.card_series,
+        n_in_series: _.n_in_series,
+        tags: _.tags,
+        created_at: _.created_at,
+        owner: _.owner,
+        revised: false
+      }
+    ));
+    
+    cards.forEach(async (_, i) => {
+      try {
+        const response = await api.get(
+          `api/cards/card-scores/?card=${_.id}`,
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
+
+        // remove cards that were revised today
+        const lastRevisedDate = new Date(response.data[0]?.last_revised_at);
+        const todayDate = new Date();
+        if (
+          lastRevisedDate.getDate() === todayDate.getDate()
+          && lastRevisedDate.getMonth() === todayDate.getMonth()
+          && lastRevisedDate.getFullYear() === todayDate.getFullYear()
+        ) {
+          _.revised = true;
+        }
+
+        _.score = response.data[0]?.score;
+        _.last_revised_at = response.data[0]?.last_revised_at;
+        _.card_score_id = response.data[0]?.id;
+
+        // calculate weight of the card based on its score and last revised date
+        const daysPassed = Math.round(Math.abs((
+          today - new Date(
+            response.data[0]?.last_revised_at
+            ? response.data[0]?.last_revised_at
+            : _.created_at
+          )
+        ) / (24 * 60 * 60 * 1000)));
+        _.weight
+          = 1000 * Math.exp(-(0.6 * (
+            response.data[0]?.score
+            ? response.data[0]?.score
+            : 0
+          )))
+          + 18 * Math.pow(daysPassed, 0.7);
+
+      } catch (error) {
+        if (!error.response) {
+          console.error(error.message);
+        }
+      } finally {
+        if (i === cards.length - 1) {
+          setCardset(cards);
+          setIsCardScoresLoading(false);
+        }
+      }
+    });
+  }
+
+  useEffect(() => {
+    const shuffleArray = (array) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    };
+
+    if (!isCardScoresLoading && cardset.length > 0) {
+      shuffleArray(cardset);
+      cardset.sort((a, b) => b.weight - a.weight);
+
+      localStorage.setItem('cardset', JSON.stringify(cardset.map((_) => (
+        {
+          id: _.id,
+          card_score_id: _.card_score_id,
+          title: _.title,
+          n_in_series: _.n_in_series,
+          series_id: _.series_id,
+          tags: _.tags,
+          created_at: _.created_at,
+          score: _.score ? _.score : 0,
+          owner: _.owner,
+          revised: _.revised
+        }
+      ))));
+      navigate('/revise');
+    }
+  }, [isCardScoresLoading, cardset]);
+
   return (
     <Accordion.Root
       className="w-full border-t-2"
       type="single"
-      defaultValue="item-1"
       collapsible
     >
       <AccordionItem value="item-1">
         <AccordionTrigger>Revision & cardset statistics</AccordionTrigger>
         <AccordionContent>
+          <div
+            className="mb-2.5 w-[180px]
+              text-white text-lg font-base font-semibold bg-green kn-base-btn"
+            onClick={() => runRevise()}
+          >
+            Revise cardset
+          </div>
           <div className="text-white">
             Total # of cards in the cardset: {props.cards.length}
           </div>
@@ -97,7 +213,7 @@ const AccordionContent = forwardRef(({ children, className, ...props }, forwarde
     {...props}
     ref={forwardedRef}
   >
-    <div className="py-[15px] px-5 text-white">{children}</div>
+    <div className="py-[15px] px-3 text-white border-t border-black">{children}</div>
   </Accordion.Content>
 ));
 

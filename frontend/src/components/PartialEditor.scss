@@ -1,4 +1,4 @@
-.partial-editor {
+.partial-editor, .revise-partial-editor {
   background-color: var(--color-partial-fill);
 
   &.active-partial {
@@ -40,8 +40,10 @@
   span.inset-question {
     position: relative;
 
+    display: inline-block;
     margin: 0 4px;
     padding: 0 4px;
+    min-width: 27px;
 
     color: var(--color-inset-question-text);
     font-weight: 600;
@@ -62,6 +64,10 @@
       background-color: var(--color-partial-inset-question-selection-background);
       border-radius: 2px;
     }
+  }
+
+  p.text {
+    margin: 1px 0;
   }
 }
 
@@ -126,4 +132,38 @@ div.hint {
   border-radius: 2px;
 
   outline: none;
+}
+
+.revise-partial-editor {
+  div, p, span:not(.inset-question) {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  span.inset-question {
+    &:focus {
+      & + .revise-hint {
+        display: inline-block;
+      }
+    }
+  }
+
+  span.revise-hint {
+    position: absolute;
+    top: -33px;
+    left: 0;
+
+    display: none;
+    margin: 0 4px;
+    padding: 0 4px;
+    min-width: 27px;
+
+    color: var(--color-inset-question-text);
+    font-weight: 600;
+    line-height: 1.4;
+  
+    background-color: var(--color-green);
+    border: 2px solid var(--color-green);
+    border-radius: 2px;
+  }
 }

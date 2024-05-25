@@ -57,7 +57,7 @@ const router = createBrowserRouter([
             element: <Explore />,
           },
           {
-            path: 'revise/:id',
+            path: 'revise',
             element: <Revise />,
           },
         ]

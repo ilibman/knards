@@ -1,37 +1,31 @@
-function sanitizeContent(content) {
-  let text = content.replaceAll('<', '&lt;');
-  text = text.replaceAll('>', '&gt;');
-  text = text.replaceAll('′', '&prime;');
-  text = text.replaceAll('″', '&Prime;');
-  text = text.replaceAll('‘', '&lsquo;');
-  text = text.replaceAll('’', '&rsquo;');
-  text = text.replaceAll('‚', '&sbquo;');
-  text = text.replaceAll('“', '&ldquo;');
-  text = text.replaceAll('”', '&rdquo;');
-  text = text.replaceAll('„', '&bdquo;');
-  text = text.replaceAll('"', '&quot;');
-  text = text.replaceAll('\'', '&apos;');
-  text = text.replaceAll('«', '&laquo;');
-  text = text.replaceAll('»', '&raquo;');
-  return text;
-}
-
-export function stringifyPartialContent(json, onlyText) {
-  if (!json) {
-    return '<span id="0" class="text"></span>';
+export function getNewScore(score) {
+  let upScore, downScore, seq = [0, 1], n1 = 1, n2 = 1;
+  if (isNaN(score)) {
+    upScore = 0;
+    downScore = 0;
+  } else if (score < 0) {
+    upScore = 0;
+    downScore = 0;
+  } else if (score === 0) {
+    upScore = 1;
+    downScore = 0;
+  } else if (score === 1) {
+    upScore = 2;
+    downScore = 0;
+  } else {
+    do {
+      seq.push(n1 + n2);
+      n1 = n2;
+      n2 = seq[seq.length - 1];
+    } while (n2 !== score);
+    seq.push(seq[seq.length - 2] + seq[seq.length - 1]);
   }
 
-  return json.map((_, i) => {
-    const text = sanitizeContent(_.content);
-
-    if (onlyText) {
-      return text;
-    }
-
-    if (_.type === 'text') {  
-      return `<span id="${i}" class="text">${text}</span>`;
-    } else {
-      return `<span id="${i}" class="inset-question">${text}</span>`;
-    }
-  }).join('');
+  return {
+    upScore: seq.length > 2 ? seq[seq.length - 1] : upScore,
+    downScore: seq.length > 2 ? seq[seq.length - 3] : downScore,
+    downToOneThirdScore:
+      seq.length > 2 ? seq[Math.floor(seq.length / 3)] : downScore,
+    downToZeroScore: 0
+  }
 }
