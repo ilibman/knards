@@ -5,9 +5,10 @@ from .serializers import (
     CardSeriesSerializer,
     TagSerializer,
     CardSerializer,
-    CardPartialSerializer
+    CardPartialSerializer,
+    CardScoreSerializer
 )
-from .models import CardSeries, Tag, Card, CardPartial
+from .models import CardSeries, Tag, Card, CardPartial, CardScore
 
 
 class CardSeriesViewSet(viewsets.ModelViewSet):
@@ -100,3 +101,24 @@ class CardPartialsViewSet(viewsets.ModelViewSet):
             )
             
         return queryset.order_by('position')
+
+class CardScoresViewSet(viewsets.ModelViewSet):
+    serializer_class = CardScoreSerializer
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        card = self.request.query_params.get('card', None)
+        if not card:
+            queryset = CardScore.objects.filter(
+                owner=self.request.user
+            )
+        else:
+            queryset = CardScore.objects.filter(
+                card=card,
+                owner=self.request.user
+            )
+            
+        return queryset.order_by('pk')
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)

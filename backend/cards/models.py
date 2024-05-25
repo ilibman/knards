@@ -53,11 +53,6 @@ class Card(models.Model):
         null=True
     )
     tags = models.ManyToManyField(Tag, blank=True)
-    score = models.PositiveSmallIntegerField(
-        default=0,
-        blank=False,
-        null=False
-    )
     owner = models.ForeignKey(
         get_user_model(),
         blank=True,
@@ -113,3 +108,24 @@ class CardPartial(models.Model):
     class Meta:
         ordering = ['position']
         unique_together = ('card', 'position')
+
+
+class CardScore(models.Model):
+    card = models.ForeignKey(
+        Card,
+        on_delete=models.CASCADE,
+        related_name='card_scores'
+    )
+    owner = models.ForeignKey(
+        get_user_model(),
+        blank=True,
+        null=True,
+        related_name='card_scores',
+        on_delete=models.CASCADE
+    )
+    score = models.PositiveSmallIntegerField(
+        default=0,
+        blank=False,
+        null=False
+    )
+    last_revised_at = models.DateTimeField(auto_now=True)

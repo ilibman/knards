@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CardSeries, Tag, Card, CardPartial
+from .models import CardSeries, Tag, Card, CardPartial, CardScore
 
 class CardSeriesSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
@@ -26,5 +26,11 @@ class CardSerializer(serializers.ModelSerializer):
 class CardPartialSerializer(serializers.ModelSerializer):
     class Meta:
         model = CardPartial
+        fields = '__all__'
+        lookup_field = 'id'
+
+class CardScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CardScore
         fields = '__all__'
         lookup_field = 'id'

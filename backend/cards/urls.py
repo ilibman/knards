@@ -35,5 +35,15 @@ urlpatterns = [
         'put': 'update',
         'patch': 'partial_update',
         'delete': 'destroy'
+    })),
+    path(
+        'card-scores/',
+        views.CardScoresViewSet.as_view({'get': 'list', 'post': 'create'})
+    ),
+    path('card-scores/<int:pk>/', views.CardScoresViewSet.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'patch': 'partial_update',
+        'delete': 'destroy'
     }))
 ]
