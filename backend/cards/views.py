@@ -69,14 +69,14 @@ class CardsViewSet(viewsets.ModelViewSet):
             if tag_inclusion == 'or':
                 q = Q()
                 for tag in tags_list:
-                    q |= Q(tags__in=tag)
+                    q |= Q(tags=tag)
                 queryset = queryset.filter(q)
             if tag_inclusion == 'and':
                 for index, tag in enumerate(tags_list):
                     if index == 0:
-                        queryset = queryset.filter(tags__in=tag)
+                        queryset = queryset.filter(tags=tag)
                     else:
-                        queryset &= queryset.filter(tags__in=tag)
+                        queryset &= queryset.filter(tags=tag)
             
         return queryset.distinct().order_by('-created_at')
 

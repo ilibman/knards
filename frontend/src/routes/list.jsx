@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { useCookies } from 'react-cookie';
 import {
   Input,
   InputGroup,
@@ -19,6 +20,7 @@ export default function List() {
   const [cards, setCards] = useState([]);
   const [cardSeries, setCardSeries] = useState({});
   const [tags, setTags] = useState({});
+  const [preselectedTags, setPreselectedTags] = useState([]);
   const [cardPartials, setCardPartials] = useState({});
 
   const [seriesPickerData, setSeriesPickerData] = useState([]);
@@ -28,6 +30,8 @@ export default function List() {
   const [isCardSeriesLoading, setIsCardSeriesLoading] = useState(true);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
   const [isCardPartialsLoading, setIsCardPartialsLoading] = useState(true);
+
+  const [cookies, setCookies, removeCookies] = useCookies(['tags']);
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -115,6 +119,20 @@ export default function List() {
           response.data.map((_) => ({ label: _.name, value: _.name }))
         );
         setTags(tagsMap);
+        
+        if (cookies.tags) {
+          const preselectedTagsIds
+            = JSON.stringify(cookies.tags).indexOf(',') !== -1
+              ? cookies.tags.split(',')
+              : cookies.tags;
+          params.tags = `tags=${preselectedTagsIds}`;
+          setParams({ ...params });
+          setPreselectedTags(
+            preselectedTagsIds.length
+              ? preselectedTagsIds.map((_) => tagsMap[_]?.name)
+              : [tagsMap[preselectedTagsIds]?.name]
+          );
+        }
       } catch (error) {
         if (!error.response) {
           console.error(error.message);
@@ -192,9 +210,18 @@ export default function List() {
     const selectedTagIds = flattenedTags.filter((_) => (
       value.includes(_.name)
     )).map((_) => _.id);
-      
-    params.tags = `tags=${selectedTagIds}`
+
+    params.tags = `tags=${selectedTagIds}`;
+    setCookies('tags', selectedTagIds.join(','), { path: '/' });
     setParams({ ...params });
+  }
+
+  function handleLastTagRemoved() {
+    if (!cookies.tags.length) {
+      delete params.tags;
+      setParams({ ...params });
+      removeCookies('tags');
+    }
   }
 
   function handleTagInclusionSettingChange(value) {
@@ -225,129 +252,142 @@ export default function List() {
 
   return (
     <>
-      <div
-        className="mt-2"
-        id="series-picker"
-      >
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Series:</label>
-        <SelectPicker
-          data={seriesPickerData}
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          onChange={handleSeriesPickerChange}
-        />
-      </div>
-      <div id="tag-picker">
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Tags:</label>
-        <TagPicker
-          data={tagPickerData}
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px' }}
-          onChange={handleTagPickerChange}
-        />
-        <RadioGroup
-          name="tagInclusionSetting"
-          inline
-          style={{ width: 'calc(100% - 20px)', margin: '0 10px' }}
-          onChange={handleTagInclusionSettingChange}
-        >
-          <Radio className="text-lg" checked value="or">OR</Radio>
-          <Radio className="text-lg" value="and">AND</Radio>
-        </RadioGroup>
-      </div>
-      <div id="fulltext-search">
-        <label
-          className="mx-3 text-white font-base font-semibold text-lg"
-        >Fulltext:</label>
-        <InputGroup
-          inside
-          style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-          onChange={handleFulltextChange}
-        >
-          <Input />
-          <InputGroup.Button>
-            <SearchIcon />
-          </InputGroup.Button>
-        </InputGroup>
-      </div>
-      <ListStatsAndRevise
-        cards={cards}
-        tags={tags}
-      >
-      </ListStatsAndRevise>
-      <div>
-        {(
-          isCardsLoading
-          || isCardSeriesLoading
-          || isTagsLoading
-          || isCardPartialsLoading
-        ) && <p>Loading...</p>}
-        {(
-          !isCardsLoading
-          && !isCardSeriesLoading
-          && !isTagsLoading
-          && !isCardPartialsLoading
-        ) && (
-          <div className="flex flex-col border-t-2">
-            {cards.map((_, i) => (
-              <Link
-                className="bg-brown-light border-b"
-                key={_.id}
-                to={`/edit/${_.id}`}
-              >
-                <div className="flex font-semibold text-lg">
-                  {
-                    _.title
-                    && (
-                      <div className="flex-1 px-2 border-r">
-                        {_.title}
-                      </div>
-                    )
-                  }
-                  <div className="flex-1 px-2 border-r">
-                    {
-                      cardPartials[_.id]
-                        ? renderPartialText(
-                          cardPartials[_.id][0].content,
-                          true
+      {(
+        isCardSeriesLoading
+        || isTagsLoading
+      ) && <p>Loading...</p>}
+      {(
+        !isCardSeriesLoading
+        && !isTagsLoading
+      ) && (
+        <>
+          <div
+            className="mt-2"
+            id="series-picker"
+          >
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Series:</label>
+            <SelectPicker
+              data={seriesPickerData}
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              onChange={handleSeriesPickerChange}
+            />
+          </div>
+          <div id="tag-picker">
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Tags:</label>
+            <TagPicker
+              data={tagPickerData}
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px' }}
+              defaultValue={preselectedTags}
+              onChange={handleTagPickerChange}
+              onTagRemove={handleLastTagRemoved}
+            />
+            <RadioGroup
+              name="tagInclusionSetting"
+              inline
+              style={{ width: 'calc(100% - 20px)', margin: '0 10px' }}
+              onChange={handleTagInclusionSettingChange}
+            >
+              <Radio className="text-lg" checked value="or">OR</Radio>
+              <Radio className="text-lg" value="and">AND</Radio>
+            </RadioGroup>
+          </div>
+          <div id="fulltext-search">
+            <label
+              className="mx-3 text-white font-base font-semibold text-lg"
+            >Fulltext:</label>
+            <InputGroup
+              inside
+              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              onChange={handleFulltextChange}
+            >
+              <Input />
+              <InputGroup.Button>
+                <SearchIcon />
+              </InputGroup.Button>
+            </InputGroup>
+          </div>
+          <ListStatsAndRevise
+            cards={cards}
+            tags={tags}
+          >
+          </ListStatsAndRevise>
+          <div>
+            {(
+              isCardsLoading
+              || isCardSeriesLoading
+              || isTagsLoading
+              || isCardPartialsLoading
+            ) && <p>Loading...</p>}
+            {(
+              !isCardsLoading
+              && !isCardSeriesLoading
+              && !isTagsLoading
+              && !isCardPartialsLoading
+            ) && (
+              <div className="flex flex-col border-t-2">
+                {cards.map((_, i) => (
+                  <Link
+                    className="bg-brown-light border-b"
+                    key={_.id}
+                    to={`/edit/${_.id}`}
+                  >
+                    <div className="flex font-semibold text-lg">
+                      {
+                        _.title
+                        && (
+                          <div className="flex-1 px-2 border-r">
+                            {_.title}
+                          </div>
                         )
-                        : ''
-                    }
-                  </div>
-                  {
-                    _.card_series
-                    && (
-                      <div className="px-2 border-r">
+                      }
+                      <div className="flex-1 px-2 border-r">
                         {
-                          _.card_series
-                            ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
+                          cardPartials[_.id]
+                            ? renderPartialText(
+                              cardPartials[_.id][0].content,
+                              true
+                            )
                             : ''
                         }
                       </div>
-                    )
-                  }
-                  {
-                    _.tags.length > 0
-                    && (
-                      <div className="px-2 border-r">{_.tags.map((__) => (
-                        <div key={tags[__].id}>{tags[__]?.name}</div>
-                      ))}</div>
-                    )
-                  }
-                  <div className="px-2">
-                    Created: {new Date(_.created_at).toLocaleString(
-                      'en-UK',
-                      { day: 'numeric', month: 'numeric', year: 'numeric' }
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
+                      {
+                        _.card_series
+                        && (
+                          <div className="px-2 border-r">
+                            {
+                              _.card_series
+                                ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
+                                : ''
+                            }
+                          </div>
+                        )
+                      }
+                      {
+                        _.tags.length > 0
+                        && (
+                          <div className="px-2 border-r">{_.tags.map((__) => (
+                            <div key={tags[__].id}>{tags[__]?.name}</div>
+                          ))}</div>
+                        )
+                      }
+                      <div className="px-2">
+                        Created: {new Date(_.created_at).toLocaleString(
+                          'en-UK',
+                          { day: 'numeric', month: 'numeric', year: 'numeric' }
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </>
   );
 }

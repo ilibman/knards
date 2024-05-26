@@ -45,6 +45,14 @@
   border: none !important;
 }
 
+.rs-picker-textbox {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 10px;
+  padding-bottom: 0 !important;
+}
+
 .rs-picker-toggle-wrapper:has(.rs-picker-toggle-active) {
   border: 2px solid var(--color-input-border-active) !important;
   box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
@@ -101,9 +109,9 @@
 }
 
 .rs-tag {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  margin-left: 10px !important;
+  margin: 0 !important;
   padding-right: 8px !important;
   
   background-color: var(--color-tag-background);
@@ -197,10 +205,6 @@
   width: 16px !important;
 }
 
-.rs-radio-wrapper {
-  top: 12px !important;
-}
-
 .rs-radio-inline {
   margin-right: 20px !important;
 }
@@ -214,7 +218,7 @@
 }
 
 .rs-radio-checker {
-  label {
+  .rs-radio-label {
     color: var(--color-white);
   }
 }
