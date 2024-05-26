@@ -135,17 +135,12 @@ export default function New() {
     });
   }
 
-  function handleEnterTags(value) {
-    const allTagsNames = Object.values(tags).map((_) => _.name);
-    const newTags = value.filter((_) => (
-      !allTagsNames.includes(_)
-    ));
-
-    newTags.forEach(async (_) => {
+  function handleCreateTag(value, item, event) {
+    const createTag = async (value) => {
       try {
         const response = await api.post(
           'api/cards/tags/',
-          { name: _ },
+          { name: value },
           {
             headers: {
               Authorization: `JWT ${authTokens.access}`,
@@ -159,7 +154,11 @@ export default function New() {
 
         setCard({
           ...card,
-          tags: [...card.tags, response.data.id]
+          tags: [...(card.tags ? card.tags : []), response.data.id],
+          tagsNames: [
+            ...(card.tagsNames ? card.tagsNames : []),
+            response.data.name
+          ]
         });
         setTags([
           ...tags,
@@ -170,6 +169,17 @@ export default function New() {
           console.error(error.message);
         }
       }
+    };
+
+    createTag(item.label);
+  }
+
+  function handleRemoveTag(value) {
+    const tagId = tags.find((_) => _.name === value).id;
+    setCard({
+      ...card,
+      tags: [...card.tags.filter((_) => _ !== tagId)],
+      tagsNames: [...card.tagsNames.filter((_) => _ !== value)]
     });
   }
 
@@ -399,11 +409,14 @@ export default function New() {
               className="mx-3 text-white font-base font-semibold text-lg"
             >Tags:</label>
             <TagPicker
+              creatable
+              locale={{ createOption: 'New tag: {0}' }}
               data={tagPickerData}
               style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
               value={card.tagsNames}
-              onChange={handleEnterTags}
+              onCreate={(value, item, event) => handleCreateTag(value, item, event)}
               onSelect={handlePickTags}
+              onTagRemove={handleRemoveTag}
             />
           </div>
 
