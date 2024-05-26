@@ -81,11 +81,13 @@ class CardsViewSet(viewsets.ModelViewSet):
         return queryset.distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
+        card_series = self.request.data.get('card_series', None)
         cards = Card.objects.filter(
-            card_series=self.request.data.get('card_series', None)
+            card_series=card_series
         )
+        n_in_series = [1 if card_series is not None else len(cards) + 1]
 
-        serializer.save(owner=self.request.user, n_in_series=len(cards) + 1)
+        serializer.save(owner=self.request.user, n_in_series=n_in_series)
 
 class CardPartialsViewSet(viewsets.ModelViewSet):
     serializer_class = CardPartialSerializer
