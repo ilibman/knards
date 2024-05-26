@@ -56,19 +56,30 @@ export default function RevisePartialEditor({ ...props }) {
           } else {
             return (
               <pre
-                className="min-h-[27px] code"
+                className={`min-h-[27px] code
+                  ${props.readOnly ? 'answer-partial' : '' }
+                `}
                 key={i}
               >
                 <code>{_.children.map((__, j) => (
                   <span
-                    className={`outline-none
-                      ${__.insetQuestion ? 'inset-question' : ''}
+                    className={`relative
+                      ${__.insetQuestion ? '' : ''}
                     `}
                     key={i + j}
-                    contentEditable={__.insetQuestion}
-                    suppressContentEditableWarning
-                    spellCheck={false}
-                  >{__.text}</span>
+                  >
+                    <span
+                      className={`outline-none
+                        ${__.insetQuestion ? 'inset-question' : ''}
+                      `}
+                      contentEditable={__.insetQuestion}
+                      suppressContentEditableWarning
+                      spellCheck={false}
+                    >{__.text}</span>
+                    {__.hint && (
+                      <span className="revise-hint">{__.hint}</span>
+                    )}
+                  </span>
                 ))}</code>
               </pre>
             );
