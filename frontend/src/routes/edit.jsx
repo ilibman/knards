@@ -593,10 +593,13 @@ export default function Edit() {
             >Series:</label>
             <div className="flex">
               <InputPicker
+                creatable
+                locale={{ createOption: 'New series: {0}' }}
                 data={seriesPickerData}
                 style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
                 value={cardSeries[card.card_series]?.id}
                 onChange={handleSeriesPickerChange}
+                onCreate={handleSeriesPickerChange}
                 onClean={handleClearSeries}
               />
               <DialogReorderCardsInSeries

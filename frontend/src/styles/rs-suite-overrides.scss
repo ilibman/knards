@@ -34,8 +34,12 @@
 
   &:hover, &:active, &:focus, &.rs-picker-focused {
     border-color: var(--color-input-border-active) !important;
-    box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
+    box-shadow: 0 2px 2px -1px var(--color-input-shadow-active) !important;
   }
+}
+
+.rs-picker-toggle:focus-visible {
+  outline: none;
 }
 
 .rs-picker-default .rs-picker-toggle {
@@ -150,6 +154,10 @@
 .rs-picker-none {
   color: var(--color-input-text) !important;
   font-size: 1.125rem !important;
+}
+
+.rs-picker-search-input {
+  padding-left: 0 !important;
 }
 
 .rs-picker-select-menu-item, .rs-check-item {
