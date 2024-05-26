@@ -334,17 +334,27 @@ export default function Revise() {
           {reviseCardPartials[revisedCardIndex].map((_, i) => (
             <div className="flex flex-col mb-3 min-[1440px]:flex-row" key={i}>
               <div
-                className={`${isEvaluating
+                className={`${isEvaluating && (
+                  cardPartials[revisedCardIndex][i].content.some(
+                    (_) => _.children.some((__) => __.insetQuestion)
+                  ) || cardPartials[revisedCardIndex][i].is_prompt
+                )
                   ? 'mr-3 w-full min-[1440px]:w-1/2'
                   : 'w-full'}`}
               >
                 <RevisePartialEditor
                   content={_.content}
-                  isActivePartial={i === activePartial[0] && activePartial[1] === 0}
+                  isActivePartial={
+                    i === activePartial[0] && activePartial[1] === 0
+                  }
                   onPartialFocus={() => setActivePartial([i, 0])}
                 ></RevisePartialEditor>
               </div>
               {isEvaluating && (
+                cardPartials[revisedCardIndex][i].content.some(
+                  (_) => _.children.some((__) => __.insetQuestion)
+                ) || cardPartials[revisedCardIndex][i].is_prompt
+              ) && (
                 <div className="w-full mt-3 min-[1440px]:w-1/2 min-[1440px]:mt-0">
                   <RevisePartialEditor
                     content={cardPartials[revisedCardIndex][i].content}

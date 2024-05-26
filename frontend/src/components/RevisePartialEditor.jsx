@@ -105,6 +105,7 @@ export default function RevisePartialEditor({ ...props }) {
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 spellCheck={false}
+                readOnly={props.readOnly}
                 onFocus={props.onPartialFocus}
               />
             </Slate>
