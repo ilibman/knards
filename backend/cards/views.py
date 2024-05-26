@@ -85,7 +85,7 @@ class CardsViewSet(viewsets.ModelViewSet):
         cards = Card.objects.filter(
             card_series=card_series
         )
-        n_in_series = [1 if card_series is not None else len(cards) + 1]
+        n_in_series = 1 if card_series is None else len(cards) + 1
 
         serializer.save(owner=self.request.user, n_in_series=n_in_series)
 
