@@ -295,21 +295,23 @@ export default function List() {
               <Radio className="text-lg" value="and">AND</Radio>
             </RadioGroup>
           </div>
-          <div id="fulltext-search">
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Fulltext:</label>
-            <InputGroup
-              inside
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              onChange={handleFulltextChange}
-            >
-              <Input />
-              <InputGroup.Button>
-                <SearchIcon />
-              </InputGroup.Button>
-            </InputGroup>
-          </div>
+          {false && (
+            <div id="fulltext-search">
+              <label
+                className="mx-3 text-white font-base font-semibold text-lg"
+              >Fulltext:</label>
+              <InputGroup
+                inside
+                style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+                onChange={handleFulltextChange}
+              >
+                <Input />
+                <InputGroup.Button>
+                  <SearchIcon />
+                </InputGroup.Button>
+              </InputGroup>
+            </div>
+          )}
           <ListStatsAndRevise
             cards={cards}
             tags={tags}
