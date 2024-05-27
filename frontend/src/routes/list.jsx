@@ -196,13 +196,7 @@ export default function List() {
     setParams({ ...params });
   }
 
-  function handleTagPickerChange(value) {
-    if (value.length === 0) {
-      delete params.tags;
-      setParams({ ...params });
-      return false;
-    }
-
+  function handleTagSelect(value) {
     const flattenedTags = Object.keys(tags).reduce(function (r, k) {
       return r.concat(tags[k]);
     }, []);
@@ -216,11 +210,21 @@ export default function List() {
     setParams({ ...params });
   }
 
-  function handleLastTagRemoved() {
-    if (!cookies.tags.length) {
+  function handleTagRemove(value) {
+    const tagId = Object.values(tags).find((_) => _.name === value).id;
+    const tagList
+      = JSON.stringify(cookies.tags).indexOf(',') !== -1
+        ? cookies.tags.split(',').filter((_) => +_ !== tagId)
+        : [];
+
+    if (tagList.length === 0) {
       delete params.tags;
       setParams({ ...params });
       removeCookies('tags');
+    } else {
+      params.tags = `tags=${tagList}`;
+      setParams({ ...params });
+      setCookies('tags', tagList.join(','), { path: '/' });
     }
   }
 
@@ -282,8 +286,8 @@ export default function List() {
               data={tagPickerData}
               style={{ width: 'calc(100% - 20px)', margin: '4px 10px' }}
               defaultValue={preselectedTags}
-              onChange={handleTagPickerChange}
-              onTagRemove={handleLastTagRemoved}
+              onSelect={handleTagSelect}
+              onTagRemove={handleTagRemove}
             />
             <RadioGroup
               name="tagInclusionSetting"
