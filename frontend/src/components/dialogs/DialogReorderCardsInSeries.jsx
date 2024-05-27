@@ -1,13 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import Sortable from 'sortablejs';
 import { RxCross2 } from 'react-icons/rx';
 import { GoListOrdered } from 'react-icons/go';
 import { FaCheck } from 'react-icons/fa';
+import AuthContext from '../../context/AuthProvider';
+import api from '../../api';
 
 export default function DialogReorderCardsInSeries(props) {
+  const { authTokens } = useContext(AuthContext);
   const [cards, setCards] = useState([]);
+  const [cardPartialsExcerpts, setCardPartialsExcerpts] = useState({});
   const [dialogOpened, setDialogOpened] = useState(false);
+  
+  const [isCardPartialsExcerptsLoading, setIsCardPartialsExcerptsLoading]
+    = useState(true);
 
   useEffect(() => {
     setCards(props.cardsFromSeries.sort(
@@ -38,6 +45,38 @@ export default function DialogReorderCardsInSeries(props) {
       }
     });
   }, [dialogOpened]);
+
+  useEffect(() => {
+    const fetchCardPartials = async (cardId) => {
+      try {
+        const response = await api.get(
+          `api/cards/card-partials/?card=${cardId}`,
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
+        setCardPartialsExcerpts((prevValue) => (
+          {
+            ...prevValue,
+            [cardId]: response.data[0].content[0].children[0].text
+          }
+        ));
+      } catch (error) {
+        if (!error.response) {
+          console.error(error.message);
+        }
+      } finally {
+        setIsCardPartialsExcerptsLoading(false);
+      }
+    };
+    
+    cards.forEach((_) => {
+      fetchCardPartials(_.id);
+    });
+  }, [cards]);
 
   function saveChanges() {
     props.onSave(cards);
@@ -90,7 +129,11 @@ export default function DialogReorderCardsInSeries(props) {
                     first:border-t"
                   key={item.id}
                   id={item.id}
-                >{item.title}</li>
+                >{item.title ? item.title : (
+                  cardPartialsExcerpts[item.id]?.length > 50
+                    ? cardPartialsExcerpts[item.id]?.substr(0, 50) + '...'
+                    : cardPartialsExcerpts[item.id]
+                )}</li>
               ))}
             </ul>
           </fieldset>
