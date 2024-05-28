@@ -59,22 +59,11 @@ const ListStatsAndRevise = ({ ...props }) => {
           }
         );
 
-        // remove cards that were revised today
-        const lastRevisedDate = new Date(response.data[0]?.last_revised_at);
-        const todayDate = new Date();
-        if (
-          lastRevisedDate.getDate() === todayDate.getDate()
-          && lastRevisedDate.getMonth() === todayDate.getMonth()
-          && lastRevisedDate.getFullYear() === todayDate.getFullYear()
-        ) {
-          _.revised = true;
-        }
-
         _.score = response.data[0]?.score;
         _.last_revised_at = response.data[0]?.last_revised_at;
         _.card_score_id = response.data[0]?.id;
 
-        // calculate weight of the card based on its score and last revised date
+        // calculate the amount of days passed since the last revision
         const daysPassed = Math.round(Math.abs((
           today - new Date(
             response.data[0]?.last_revised_at
@@ -82,6 +71,14 @@ const ListStatsAndRevise = ({ ...props }) => {
             : _.created_at
           )
         ) / (24 * 60 * 60 * 1000)));
+
+        // remove cards score of which is higher
+        // than the amount of days passed since last revision
+        if (_.score && _.score > daysPassed) {
+          _.revised = true;
+        }
+
+        // calculate weight of the card based on its score and last revised date
         _.weight
           = 1000 * Math.exp(-(0.6 * (
             response.data[0]?.score
