@@ -8,7 +8,9 @@ import {
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 import AuthContext from '../context/AuthProvider';
-import PartialEditor from '../components/PartialEditor';
+import PartialEditor from '../components/partial-editor/PartialEditor';
+import PartialEditorWithVim
+  from '../components/partial-editor/PartialEditorWithVim';
 import api from '../api';
 
 export default function New() {
@@ -439,34 +441,74 @@ export default function New() {
                   >
                     <FaCode />
                   </li>
+                  <li
+                    className="flex items-center w-[36px] h-[36px] mr-2
+                      bg-white kn-base-btn"
+                    onClick={() => addPartial(partialIndex, 'vim')}
+                  >
+                    <span className="font-semibold leading-[0.1]">vi</span>
+                  </li>
                 </ul>
-                {activePartial === partialIndex && (
-                  <PartialEditor
-                    content={_.content}
-                    isPrompt={_.is_prompt}
-                    promptInitialContent={_.prompt_initial_content}
-                    onClick={() => setActivePartial(partialIndex)}
-                    onContentChange={
-                      (value) => handlePartialContentChange(
-                        value,
-                        partialIndex
-                      )
-                    }
-                    onIsPromptChange={(value) =>
-                      handlePartialIsPromptChange(
-                        value,
-                        partialIndex
-                      )
-                    }
-                    onPromptInitialContentChange={(value) =>
-                      handlePromptInitialContentChange(
-                        value,
-                        partialIndex
-                      )
-                    }
-                    onDelete={handlePartialDelete}
-                  />
-                )}
+                {activePartial === partialIndex
+                  && _.content[0].type !== 'vim'
+                  && (
+                    <PartialEditor
+                      content={_.content}
+                      isPrompt={_.is_prompt}
+                      promptInitialContent={_.prompt_initial_content}
+                      onClick={() => setActivePartial(partialIndex)}
+                      onContentChange={
+                        (value) => handlePartialContentChange(
+                          value,
+                          partialIndex
+                        )
+                      }
+                      onIsPromptChange={(value) =>
+                        handlePartialIsPromptChange(
+                          value,
+                          partialIndex
+                        )
+                      }
+                      onPromptInitialContentChange={(value) =>
+                        handlePromptInitialContentChange(
+                          value,
+                          partialIndex
+                        )
+                      }
+                      onDelete={handlePartialDelete}
+                    />
+                  )
+                }
+                {activePartial === partialIndex
+                  && _.content[0].type === 'vim'
+                  && (
+                    <PartialEditorWithVim
+                      content={_.content}
+                      isPrompt={_.is_prompt}
+                      promptInitialContent={_.prompt_initial_content}
+                      onClick={() => setActivePartial(partialIndex)}
+                      onContentChange={
+                        (value) => handlePartialContentChange(
+                          value,
+                          partialIndex
+                        )
+                      }
+                      onIsPromptChange={(value) =>
+                        handlePartialIsPromptChange(
+                          value,
+                          partialIndex
+                        )
+                      }
+                      onPromptInitialContentChange={(value) =>
+                        handlePromptInitialContentChange(
+                          value,
+                          partialIndex
+                        )
+                      }
+                      onDelete={handlePartialDelete}
+                    />
+                  )
+                }
                 {activePartial !== partialIndex && (
                   <div
                     className="p-4 flex flex-wrap bg-brown-light shadow-md
@@ -485,10 +527,17 @@ export default function New() {
                   <IoText />
                 </li>
                 <li
-                  className="bg-white kn-base-btn"
+                  className="mr-2 bg-white kn-base-btn"
                   onClick={() => addPartial(cardPartials.length, 'code')}
                 >
                   <FaCode />
+                </li>
+                <li
+                  className="flex items-center w-[36px] h-[36px]
+                    bg-white kn-base-btn"
+                  onClick={() => addPartial(cardPartials.length, 'vim')}
+                >
+                  <span className="font-semibold leading-[0.1]">vi</span>
                 </li>
               </ul>
               <div

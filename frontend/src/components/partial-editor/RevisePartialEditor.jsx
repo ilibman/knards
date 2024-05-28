@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { createEditor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
-import './PartialEditor.scss';
+import './RevisePartialEditor.scss';
 
 export default function RevisePartialEditor({ ...props }) {
   const [editor] = useState(() => withReact(createEditor()));

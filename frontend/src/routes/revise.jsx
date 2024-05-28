@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthProvider';
 import api from '../api';
 import { getNewScore } from '../utils';
-import RevisePartialEditor from '../components/RevisePartialEditor';
+import RevisePartialEditor
+  from '../components/partial-editor/RevisePartialEditor';
+import PartialEditorWithVim
+  from '../components/partial-editor/PartialEditorWithVim';
 import './revise.scss';
 
 export default function Revise() {
@@ -342,13 +345,24 @@ export default function Revise() {
                   ? 'mr-3 w-full min-[1440px]:w-1/2'
                   : 'w-full'}`}
               >
-                <RevisePartialEditor
-                  content={_.content}
-                  isActivePartial={
-                    i === activePartial[0] && activePartial[1] === 0
-                  }
-                  onPartialFocus={() => setActivePartial([i, 0])}
-                ></RevisePartialEditor>
+                {_.content[0].type !== 'vim' && (
+                  <RevisePartialEditor
+                    content={_.content}
+                    isActivePartial={
+                      i === activePartial[0] && activePartial[1] === 0
+                    }
+                    onPartialFocus={() => setActivePartial([i, 0])}
+                  />
+                )}
+                {_.content[0].type === 'vim' && (
+                  <PartialEditorWithVim
+                    content={_.content}
+                    isActivePartial={
+                      i === activePartial[0] && activePartial[1] === 0
+                    }
+                    onPartialFocus={() => setActivePartial([i, 0])}
+                  />
+                )}
               </div>
               {isEvaluating && (
                 cardPartials[revisedCardIndex][i].content.some(
