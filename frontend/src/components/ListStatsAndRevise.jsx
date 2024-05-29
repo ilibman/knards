@@ -62,6 +62,10 @@ const ListStatsAndRevise = ({ ...props }) => {
             _.revised = true;
           }
 
+          if (daysPassed === 0) {
+            _.revised = true;
+          }
+
           // calculate weight of the card based on its score and last revised date
           _.weight
             = 1000 * Math.exp(-(0.6 * (
@@ -80,7 +84,7 @@ const ListStatsAndRevise = ({ ...props }) => {
             setCardset(cards);
 
             const tagStatistics = {};
-  
+            
             cards.forEach((_) => {
               const tagLine
                 = _.tags.sort().map((tagId) => props.tags[tagId]?.name).join(', ');
@@ -110,24 +114,27 @@ const ListStatsAndRevise = ({ ...props }) => {
       }
     };
 
-    if (!isCardScoresLoading && cardset.length > 0) {
-      shuffleArray(cardset);
-      cardset.sort((a, b) => b.weight - a.weight);
+    const filteredCardset = cardset.filter((_) => !_.revised);
+    if (!isCardScoresLoading && filteredCardset.length > 0) {
+      shuffleArray(filteredCardset);
+      filteredCardset.sort((a, b) => b.weight - a.weight);
 
-      localStorage.setItem('cardset', JSON.stringify(cardset.map((_) => (
-        {
-          id: _.id,
-          card_score_id: _.card_score_id,
-          title: _.title,
-          n_in_series: _.n_in_series,
-          series_id: _.series_id,
-          tags: _.tags,
-          created_at: _.created_at,
-          score: _.score ? _.score : 0,
-          owner: _.owner,
-          revised: _.revised
-        }
-      ))));
+      localStorage.setItem('cardset', JSON.stringify(filteredCardset
+        .map((_) => (
+          {
+            id: _.id,
+            card_score_id: _.card_score_id,
+            title: _.title,
+            n_in_series: _.n_in_series,
+            series_id: _.series_id,
+            tags: _.tags,
+            created_at: _.created_at,
+            score: _.score ? _.score : 0,
+            owner: _.owner,
+            revised: _.revised
+          }
+        )
+      )));
       navigate('/revise');
     }
   }
@@ -156,8 +163,12 @@ const ListStatsAndRevise = ({ ...props }) => {
               <li
                 className="text-white"
                 key={i}
-              >{Object.keys(tagStatistics)[i]}: {_.length}
-                &nbsp;(to revise {_.filter((__) => !__.revised).length})</li>
+              >
+                <span className="inline-flex text-white">
+                  {Object.keys(tagStatistics)[i]}
+                </span>:
+                &nbsp;{_.length}
+                &nbsp;({_.filter((__) => !__.revised).length} to revise)</li>
             ))}
           </ul>
         </AccordionContent>
