@@ -34,6 +34,8 @@ export default function List() {
   const [cookies, setCookies, removeCookies] = useCookies(['tags']);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchCards = async () => {
       // construct query params string from params object
       let flattenedParams = Object.keys(params).reduce(function (r, k) {
@@ -51,7 +53,8 @@ export default function List() {
             headers: {
               Authorization: `JWT ${authTokens.access}`
             },
-            withCredentials: true
+            withCredentials: true,
+            signal: controller.signal
           }
         );
         setCards(response.data);
@@ -65,9 +68,14 @@ export default function List() {
     };
 
     fetchCards();
+
+    return () => {
+      controller.abort();
+    }
   }, [params]);
 
   useEffect(() => {
+
     const fetchCardSeries = async () => {
       try {
         const response = await api.get(
