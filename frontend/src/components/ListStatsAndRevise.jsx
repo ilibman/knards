@@ -14,93 +14,95 @@ const ListStatsAndRevise = ({ ...props }) => {
   const [isCardScoresLoading, setIsCardScoresLoading] = useState(false);
 
   useEffect(() => {
-    const tagStatistics = {};
+    const getScoresAndSetCardset = async () => {
+      setIsCardScoresLoading(true);
+      const today = new Date();
+      
+      const cards = props.cards.map((_) => (
+        {
+          id: _.id,
+          title: _.title,
+          series_id: _.card_series,
+          n_in_series: _.n_in_series,
+          tags: _.tags,
+          created_at: _.created_at,
+          owner: _.owner,
+          revised: false
+        }
+      ));
+      
+      cards.forEach(async (_, i) => {
+        try {
+          const response = await api.get(
+            `api/cards/card-scores/?card=${_.id}`,
+            {
+              headers: {
+                Authorization: `JWT ${authTokens.access}`
+              },
+              withCredentials: true
+            }
+          );
 
-    props.cards.forEach((_) => {
-      const tagLine
-        = _.tags.sort().map((tagId) => props.tags[tagId]?.name).join(', ');
-      if (!tagStatistics[tagLine]) {
-        tagStatistics[tagLine] = [];
-        tagStatistics[tagLine].push(_);
-      } else {
-        tagStatistics[tagLine].push(_);
-      }
-    });
+          _.score = response.data[0]?.score;
+          _.last_revised_at = response.data[0]?.last_revised_at;
+          _.card_score_id = response.data[0]?.id;
 
-    setTagStatistics(tagStatistics);
+          // calculate the amount of days passed since the last revision
+          const daysPassed = Math.round(Math.abs((
+            today - new Date(
+              response.data[0]?.last_revised_at
+              ? response.data[0]?.last_revised_at
+              : _.created_at
+            )
+          ) / (24 * 60 * 60 * 1000)));
+
+          // remove cards score of which is higher
+          // than the amount of days passed since last revision
+          if (_.score && _.score > daysPassed) {
+            _.revised = true;
+          }
+
+          // calculate weight of the card based on its score and last revised date
+          _.weight
+            = 1000 * Math.exp(-(0.6 * (
+              response.data[0]?.score
+              ? response.data[0]?.score
+              : 0
+            )))
+            + 18 * Math.pow(daysPassed, 0.7);
+
+        } catch (error) {
+          if (!error.response) {
+            console.error(error.message);
+          }
+        } finally {
+          if (i === cards.length - 1) {
+            setCardset(cards);
+
+            const tagStatistics = {};
+  
+            cards.forEach((_) => {
+              const tagLine
+                = _.tags.sort().map((tagId) => props.tags[tagId]?.name).join(', ');
+              if (!tagStatistics[tagLine]) {
+                tagStatistics[tagLine] = [];
+                tagStatistics[tagLine].push(_);
+              } else {
+                tagStatistics[tagLine].push(_);
+              }
+            });
+        
+            setTagStatistics(tagStatistics);
+            setIsCardScoresLoading(false);
+          }
+        }
+      });
+    }
+
+    getScoresAndSetCardset();
   }, [props.cards, props.tags]);
 
   function runRevise() {
-    setIsCardScoresLoading(true);
-    const today = new Date();
-    
-    const cards = props.cards.map((_) => (
-      {
-        id: _.id,
-        title: _.title,
-        series_id: _.card_series,
-        n_in_series: _.n_in_series,
-        tags: _.tags,
-        created_at: _.created_at,
-        owner: _.owner,
-        revised: false
-      }
-    ));
-    
-    cards.forEach(async (_, i) => {
-      try {
-        const response = await api.get(
-          `api/cards/card-scores/?card=${_.id}`,
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-
-        _.score = response.data[0]?.score;
-        _.last_revised_at = response.data[0]?.last_revised_at;
-        _.card_score_id = response.data[0]?.id;
-
-        // calculate the amount of days passed since the last revision
-        const daysPassed = Math.round(Math.abs((
-          today - new Date(
-            response.data[0]?.last_revised_at
-            ? response.data[0]?.last_revised_at
-            : _.created_at
-          )
-        ) / (24 * 60 * 60 * 1000)));
-
-        // remove cards score of which is higher
-        // than the amount of days passed since last revision
-        if (_.score && _.score > daysPassed) {
-          _.revised = true;
-        }
-
-        // calculate weight of the card based on its score and last revised date
-        _.weight
-          = 1000 * Math.exp(-(0.6 * (
-            response.data[0]?.score
-            ? response.data[0]?.score
-            : 0
-          )))
-          + 18 * Math.pow(daysPassed, 0.7);
-
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        if (i === cards.length - 1) {
-          setCardset(cards);
-          setIsCardScoresLoading(false);
-        }
-      }
-    });
-  }
-
-  useEffect(() => {
     const shuffleArray = (array) => {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -128,7 +130,7 @@ const ListStatsAndRevise = ({ ...props }) => {
       ))));
       navigate('/revise');
     }
-  }, [isCardScoresLoading, cardset]);
+  }
 
   return (
     <Accordion.Root
@@ -154,7 +156,8 @@ const ListStatsAndRevise = ({ ...props }) => {
               <li
                 className="text-white"
                 key={i}
-              >{Object.keys(tagStatistics)[i]}: {_.length}</li>
+              >{Object.keys(tagStatistics)[i]}: {_.length}
+                &nbsp;(to revise {_.filter((__) => !__.revised).length})</li>
             ))}
           </ul>
         </AccordionContent>
