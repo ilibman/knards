@@ -74,28 +74,71 @@ export default function PartialEditorWithVim({ ...props }) {
         setCommandPrefix('');
       }
       if (value.key === 'j') {
-        // const offset = editor.selection.focus.offset;
-        Transforms.move(editor, { unit: 'line' });
-        // console.log(Editor.end(editor, editor.selection.focus.path))
-        // if (Editor.end(editor, editor.selection.focus.path).offset > offset) {
-        //   Transforms.move(editor, {
-        //     distance: offset + 1
-        //   });
-        // } else {
-        //   Transforms.move(editor, { unit: 'line' });
-        // }
+        const offset = editor.selection.focus.offset;
+        const lineLength
+          = Editor.node(editor, editor.selection.focus)[0].text.length;
+        
+        if (offset === 0) {
+          Transforms.move(editor, { distance: 2, unit: 'line' });
+        }
+        if (offset !== 0 && offset !== lineLength && lineLength !== 0) {
+          Transforms.move(editor, { distance: 2, unit: 'line' });
+          const newLineLength
+            = Editor.node(editor, editor.selection.focus)[0].text.length;
+          if (offset > newLineLength) {
+            Transforms.move(editor, { unit: 'line' });
+          } else {
+            Transforms.move(editor, {
+              distance: offset
+            });
+          }
+        }
+        if (offset === lineLength && lineLength !== 0) {
+          Transforms.move(editor, { distance: 1, unit: 'line' });
+          const newLineLength
+            = Editor.node(editor, editor.selection.focus)[0].text.length;
+          if (offset > newLineLength) {
+            Transforms.move(editor, { distance: 1, unit: 'line' });
+          } else {
+            Transforms.move(editor, {
+              distance: offset
+            });
+          }
+        }
         setCommandPrefix('');
       }
       if (value.key === 'k') {
-        // const offset = editor.selection.focus.offset;
-        Transforms.move(editor, { unit: 'line', reverse: true });
-        // if (Editor.end(editor, editor.selection.focus.path).offset > offset) {
-        //   Transforms.move(editor, {
-        //     distance: offset
-        //   });
-        // } else {
-        //   Transforms.move(editor, { unit: 'line' });
-        // }
+        const offset = editor.selection.focus.offset;
+        const lineLength
+          = Editor.node(editor, editor.selection.focus)[0].text.length;
+
+        if (offset === 0) {
+          Transforms.move(editor, { distance: 2, unit: 'line', reverse: true });
+        }
+        if (offset !== 0 && offset !== lineLength && lineLength !== 0) {
+          Transforms.move(editor, { distance: 3, unit: 'line', reverse: true });
+          const newLineLength
+            = Editor.node(editor, editor.selection.focus)[0].text.length;
+          if (offset > newLineLength) {
+            Transforms.move(editor, { unit: 'line', reverse: true });
+          } else {
+            Transforms.move(editor, {
+              distance: offset
+            });
+          }
+        }
+        if (offset === lineLength && lineLength !== 0) {
+          Transforms.move(editor, { distance: 3, unit: 'line', reverse: true });
+          const newLineLength
+            = Editor.node(editor, editor.selection.focus)[0].text.length;
+          if (offset > newLineLength) {
+            Transforms.move(editor, { distance: 1, unit: 'line', reverse: true });
+          } else {
+            Transforms.move(editor, {
+              distance: offset
+            });
+          }
+        }
         setCommandPrefix('');
       }
       if (value.key === 'h') {
@@ -208,38 +251,40 @@ export default function PartialEditorWithVim({ ...props }) {
   
   return (
     <>
-      <ul className="flex flex-row mb-2.5">
-        <li
-          className="mr-2 bg-red kn-base-btn"
-          onClick={() => props.onDelete()}
-        >
-          <IoMdTrash />
-        </li>
-        {
-          props.isPrompt
-          ? (
-            <li
-              className="relative mr-2 bg-blue
-                kn-base-btn toggle-off-is-prompt-btn"
-              onClick={() => toggleIsPrompt(false)}
-            >
-              <FaExclamation
-                className="fill-white"
-              />
-            </li>
-          )
-          : (
-            <li
-              className="mr-2 bg-blue kn-base-btn"
-              onClick={() => toggleIsPrompt(true)}
-            >
-              <FaExclamation
-                className="fill-white"
-              />
-            </li>
-          )
-        }
-      </ul>
+      {!props.isRevising && (
+        <ul className="flex flex-row mb-2.5">
+          <li
+            className="mr-2 bg-red kn-base-btn"
+            onClick={() => props.onDelete()}
+          >
+            <IoMdTrash />
+          </li>
+          {
+            props.isPrompt
+            ? (
+              <li
+                className="relative mr-2 bg-blue
+                  kn-base-btn toggle-off-is-prompt-btn"
+                onClick={() => toggleIsPrompt(false)}
+              >
+                <FaExclamation
+                  className="fill-white"
+                />
+              </li>
+            )
+            : (
+              <li
+                className="mr-2 bg-blue kn-base-btn"
+                onClick={() => toggleIsPrompt(true)}
+              >
+                <FaExclamation
+                  className="fill-white"
+                />
+              </li>
+            )
+          }
+        </ul>
+      )}
       <div className="relative flex partial-editors-wrapper">
         <Slate
           editor={editor}

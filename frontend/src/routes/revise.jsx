@@ -360,6 +360,7 @@ export default function Revise() {
                     isActivePartial={
                       i === activePartial[0] && activePartial[1] === 0
                     }
+                    isRevising={true}
                     onPartialFocus={() => setActivePartial([i, 0])}
                   />
                 )}
