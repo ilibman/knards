@@ -350,10 +350,7 @@ export default function Edit() {
       card: card.id
     });
     setCardPartials(cardPartials.map((_, i) => (
-      {
-        ..._,
-        position: ++i
-      }
+      { ..._ }
     )));
   }
 

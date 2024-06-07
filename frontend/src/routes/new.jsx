@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, createRef } from 'react';
 import {
   Input,
   InputGroup,
@@ -29,6 +29,9 @@ export default function New() {
   const [isCardSaving, setIsCardSaving] = useState(false);
 
   const [activePartial, setActivePartial] = useState(null);
+
+  const seriesRef = createRef();
+  const tagsRef = createRef();
   
   useEffect(() => {
     const fetchCardSeries = async () => {
@@ -90,13 +93,8 @@ export default function New() {
     fetchTags();
   }, []);
 
-  async function handleSeriesPickerChange(value) {
-    if (typeof value === 'number') {
-      setCard({
-        ...card,
-        card_series: value
-      });
-    } else if (typeof value === 'string') {
+  function handleSeriesPickerCreate(value) {
+    const createSeries = async () => {
       try {
         const response = await api.post(
           'api/cards/card-series/',
@@ -127,14 +125,9 @@ export default function New() {
           console.error(error.message);
         }
       }
-    }
-  }
+    };
 
-  function handleClearSeries() {
-    setCard({
-      ...card,
-      card_series: null
-    });
+    createSeries();
   }
 
   function handleCreateTag(value, item, event) {
@@ -154,14 +147,6 @@ export default function New() {
           }
         );
 
-        setCard({
-          ...card,
-          tags: [...(card.tags ? card.tags : []), response.data.id],
-          tagsNames: [
-            ...(card.tagsNames ? card.tagsNames : []),
-            response.data.name
-          ]
-        });
         setTags([
           ...tags,
           { ...response.data }
@@ -176,34 +161,6 @@ export default function New() {
     createTag(item.label);
   }
 
-  function handleRemoveTag(value) {
-    const tagId = tags.find((_) => _.name === value).id;
-    setCard({
-      ...card,
-      tags: [...card.tags.filter((_) => _ !== tagId)],
-      tagsNames: [...card.tagsNames.filter((_) => _ !== value)]
-    });
-  }
-
-  async function handlePickTags(value) {
-    const newTags = Object.values(tags)
-      .filter((_) => (
-        value.includes(_.name)
-      ))
-      .map((_) => (
-        {
-          id: _.id,
-          name: _.name
-        }
-      ));
-
-    setCard({
-      ...card,
-      tags: newTags.map((_) => _.id),
-      tagsNames: newTags.map((_) => _.name)
-    });
-  }
-
   function addPartial(index, type) {
     cardPartials.splice(index, 0, {
       content: [{
@@ -216,20 +173,38 @@ export default function New() {
       }]
     });
     setCardPartials(cardPartials.map((_, i) => (
-      {
-        ..._,
-        position: ++i
-      }
+      { ..._ }
     )));
   }
 
   async function saveCard() {
+    const cardToSave = { ...card };
+    const seriesId = Object.values(cardSeries).find(
+      (_) => seriesRef.current.target.textContent === _.name
+    )?.id;
+    if (seriesId) {
+      cardToSave.card_series = seriesId;
+    }
+    tagsRef.current.target
+      .children[0].children[0].children[0]
+      .value.split(',')
+      .forEach((_) => {
+        if (!cardToSave.tags) {
+          cardToSave.tags = [];
+        }
+
+        const tagId = tags.find((__) => _ === __.name)?.id;
+        if (tagId) {
+          cardToSave.tags.push(tagId);
+        }
+      });
+
     setIsCardSaving(true);
 
     try {
       const response = await api.post(
         `api/cards/cards/`,
-        { ...card },
+        { ...cardToSave },
         {
           headers: {
             Authorization: `JWT ${authTokens.access}`,
@@ -395,11 +370,12 @@ export default function New() {
                 creatable
                 locale={{ createOption: 'New series: {0}' }}
                 data={seriesPickerData}
-                style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-                value={cardSeries[card.card_series]?.id}
-                onChange={handleSeriesPickerChange}
-                onCreate={handleSeriesPickerChange}
-                onClean={handleClearSeries}
+                style={{
+                  width: 'calc(100% - 20px)',
+                  margin: '4px 10px 10px 10px'
+                }}
+                onCreate={handleSeriesPickerCreate}
+                ref={seriesRef}
               />
             </div>
           </div>
@@ -415,10 +391,8 @@ export default function New() {
               locale={{ createOption: 'New tag: {0}' }}
               data={tagPickerData}
               style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              value={card.tagsNames}
               onCreate={(value, item, event) => handleCreateTag(value, item, event)}
-              onSelect={handlePickTags}
-              onTagRemove={handleRemoveTag}
+              ref={tagsRef}
             />
           </div>
 
