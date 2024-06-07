@@ -294,14 +294,17 @@ export default function PartialEditorWithVim({ ...props }) {
           <Editable
             className={`flex-1 p-4 pb-5 bg-brown-light shadow-md
               outline-none partial-editor
-              ${props.isActivePartial ? 'active-partial' : 'active-partial'}`}
+              ${props.isActivePartial ? 'active-partial' : 'inactive-partial'}`}
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             spellCheck={false}
             onKeyDown={(e) => handleKeyDown(e, editor)}
+            onFocus={props.onPartialFocus}
+            onBlur={() => setIsInsertMode(false)}
           />
           <div className={`absolute
             ${props.isPrompt ? 'right-[50%]' : 'right-[-3px]'}
+            ${props.isActivePartial ? '' : 'hidden' }
             bottom-0 px-2
             text-sm text-black font-semibold bg-blue-light
             mode-indicator`}>
@@ -318,11 +321,13 @@ export default function PartialEditorWithVim({ ...props }) {
               <Editable
                 className={`flex-1 ml-2 p-4 !bg-green outline-none
                   partial-editor
-                  ${props.isActivePartial ? 'active-partial' : 'active-partial'}`}
+                  ${props.isActivePartial ? 'active-partial' : 'inactive-partial'}`}
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 spellCheck={false}
                 onKeyDown={(e) => handleKeyDown(e, editorAux)}
+                onFocus={props.onPartialFocus}
+                onBlur={() => setIsInsertMode(false)}
               />
               <div className={`absolute right-[-3px]
                 bottom-0 px-2

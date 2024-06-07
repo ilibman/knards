@@ -371,12 +371,27 @@ export default function Revise() {
                 ) || cardPartials[revisedCardIndex][i].is_prompt
               ) && (
                 <div className="w-full mt-3 min-[1440px]:w-1/2 min-[1440px]:mt-0">
-                  <RevisePartialEditor
-                    content={cardPartials[revisedCardIndex][i].content}
-                    isActivePartial={i === activePartial[0] && activePartial[1] === 1}
-                    readOnly={true}
-                    onPartialFocus={() => setActivePartial([i, 1])}
-                  ></RevisePartialEditor>
+                  {_.content[0].type !== 'vim' && (
+                    <RevisePartialEditor
+                      content={cardPartials[revisedCardIndex][i].content}
+                      isActivePartial={
+                        i === activePartial[0] && activePartial[1] === 1
+                      }
+                      readOnly={true}
+                      onPartialFocus={() => setActivePartial([i, 1])}
+                    ></RevisePartialEditor>
+                  )}
+                  {_.content[0].type === 'vim' && (
+                    <PartialEditorWithVim
+                      content={cardPartials[revisedCardIndex][i].content}
+                      isActivePartial={
+                        i === activePartial[0] && activePartial[1] === 1
+                      }
+                      readOnly={true}
+                      isRevising={true}
+                      onPartialFocus={() => setActivePartial([i, 1])}
+                    />
+                  )}
                 </div>
               )}
             </div>
