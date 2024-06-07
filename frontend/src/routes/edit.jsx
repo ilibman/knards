@@ -414,7 +414,10 @@ export default function Edit() {
         try {
           await api.post(
             'api/cards/card-partials/',
-            { ..._ },
+            {
+              ..._,
+              position: i + 1
+            },
             {
               headers: {
                 Authorization: `JWT ${authTokens.access}`,
@@ -439,7 +442,10 @@ export default function Edit() {
         try {
           await api.patch(
             `api/cards/card-partials/${_.id}/`,
-            { ..._ },
+            {
+              ..._,
+              position: i + 1
+            },
             {
               headers: {
                 Authorization: `JWT ${authTokens.access}`,

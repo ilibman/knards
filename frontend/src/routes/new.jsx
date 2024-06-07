@@ -237,7 +237,8 @@ export default function New() {
             'api/cards/card-partials/',
             {
               ..._,
-              card: card.id
+              card: card.id,
+              position: i + 1
             },
             {
               headers: {

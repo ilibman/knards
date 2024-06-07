@@ -107,7 +107,6 @@ class CardPartial(models.Model):
 
     class Meta:
         ordering = ['position']
-        unique_together = ('card', 'position')
 
 
 class CardScore(models.Model):

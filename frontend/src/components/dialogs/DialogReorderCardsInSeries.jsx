@@ -61,7 +61,7 @@ export default function DialogReorderCardsInSeries(props) {
         setCardPartialsExcerpts((prevValue) => (
           {
             ...prevValue,
-            [cardId]: response.data[0].content[0].children[0].text
+            [cardId]: response.data[0]?.content[0].children[0].text
           }
         ));
       } catch (error) {
