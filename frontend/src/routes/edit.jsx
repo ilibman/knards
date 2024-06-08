@@ -715,6 +715,7 @@ export default function Edit() {
                           content={_.content}
                           isPrompt={_.is_prompt}
                           promptInitialContent={_.prompt_initial_content}
+                          isActivePartial={true}
                           onClick={() => setActivePartial(partialIndex)}
                           onContentChange={
                             (value) => handlePartialContentChange(

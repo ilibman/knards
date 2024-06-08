@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { createEditor, Editor, Transforms, Node } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { FaExclamation } from 'react-icons/fa';
@@ -10,6 +10,12 @@ export default function PartialEditorWithVim({ ...props }) {
   const [editorAux] = useState(() => withReact(createEditor()));
   const [isInsertMode, setIsInsertMode] = useState(false);
   const [commandPrefix, setCommandPrefix] = useState('');
+
+  useEffect(() => {
+    if (!props.isActivePartial) {
+      setIsInsertMode(false);
+    }
+  }, [props.isActivePartial]);
 
   const renderElement = useCallback((props) => {
     return <Vim {...props} />;
@@ -300,7 +306,6 @@ export default function PartialEditorWithVim({ ...props }) {
             spellCheck={false}
             onKeyDown={(e) => handleKeyDown(e, editor)}
             onFocus={props.onPartialFocus}
-            onBlur={() => setIsInsertMode(false)}
           />
           <div className={`absolute
             ${props.isPrompt ? 'right-[50%]' : 'right-[-3px]'}
@@ -327,7 +332,6 @@ export default function PartialEditorWithVim({ ...props }) {
                 spellCheck={false}
                 onKeyDown={(e) => handleKeyDown(e, editorAux)}
                 onFocus={props.onPartialFocus}
-                onBlur={() => setIsInsertMode(false)}
               />
               <div className={`absolute right-[-3px]
                 bottom-0 px-2
