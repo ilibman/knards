@@ -23,7 +23,7 @@ class CardSeriesViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         card = self.request.query_params.get('card', None)
 
-        queryset = CardSeries.objects.all()
+        queryset = CardSeries.objects.filter(owner=self.request.user)
         if card:
             card = Card.objects.get(pk=card_id)
             queryset = queryset.filter(pk=card.card_series.id)
@@ -59,7 +59,7 @@ class CardsViewSet(viewsets.ModelViewSet):
         tag_inclusion = self.request.query_params.get('tag_inclusion', 'or')
         fulltext = self.request.query_params.get('fulltext', None)
 
-        queryset = Card.objects.all()
+        queryset = Card.objects.filter(owner=self.request.user)
         if series:
             queryset = queryset.filter(
                 card_series=series
@@ -96,11 +96,15 @@ class CardPartialsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         card = self.request.query_params.get('card', None)
 
-        queryset = CardPartial.objects.all()
         if card:
-            queryset = queryset.filter(
-                card=card
-            )
+            queryset = CardPartial.objects.filter(card=card)
+        else:
+            queryset = CardPartial.objects.all()
+            cards = Card.objects.filter(owner=self.request.user)
+            q = Q()
+            for _ in cards:
+                q |= Q(card=_)
+            queryset = queryset.filter(q)
             
         return queryset.order_by('position')
 
