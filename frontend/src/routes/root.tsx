@@ -11,6 +11,7 @@ import '../styles/rs-suite-overrides.scss';
 export default function Root() {
   const { authTokens } = useContext(AuthContext);
   const location = useLocation();
+  
   useEffect(() => {
     if (location.pathname !== '/revise') {
       const cardset = localStorage.getItem('cardset')
