@@ -1,5 +1,6 @@
 from django.db.models import Q
 from rest_framework import viewsets, permissions
+from knards.pagination import TanstackPagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
     CardSeriesSerializer,
@@ -51,6 +52,7 @@ class CardsViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly
     ]
+    pagination_class = TanstackPagination
     lookup_field = 'pk'
 
     def get_queryset(self):

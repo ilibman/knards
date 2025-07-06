@@ -3,6 +3,8 @@ from rest_framework.response import Response
 
 
 class TanstackPagination(pagination.PageNumberPagination):
+    page_size = 100
+    
     def get_paginated_response(self, data):
         return Response({
             'next': self.page.next_page_number()
