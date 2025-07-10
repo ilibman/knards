@@ -18,7 +18,7 @@ const ListStatsAndRevise = ({ ...props }) => {
       setIsCardScoresLoading(true);
       const today = new Date();
       
-      const cards = props.cards.map((_) => (
+      const cards = props.cards?.map((_) => (
         {
           id: _.id,
           title: _.title,
@@ -31,7 +31,7 @@ const ListStatsAndRevise = ({ ...props }) => {
         }
       ));
       
-      cards.forEach(async (_, i) => {
+      cards?.forEach(async (_, i) => {
         try {
           const response = await api.get(
             `api/cards/card-scores/?card=${_.id}`,
@@ -156,7 +156,7 @@ const ListStatsAndRevise = ({ ...props }) => {
             Revise cardset
           </div>
           <div className="text-white">
-            Total # of cards in the cardset: {props.cards.length}
+            Total # of cards in the cardset: {props.cards?.length}
           </div>
           <ul className="ml-5">
             {Object.values(tagStatistics).map((_, i) => (

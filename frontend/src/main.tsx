@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client'
+import { createRoot } from 'react-dom/client';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import {
   createBrowserRouter,
   RouterProvider,
@@ -7,6 +9,7 @@ import {
 import { CookiesProvider } from 'react-cookie';
 
 import './styles/index.scss';
+import { queryClient } from './query-client';
 import { AuthProvider } from './context/AuthProvider';
 import RequireAuth from './components/RequireAuth';
 import Root from './routes/root';
@@ -69,10 +72,13 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <CookiesProvider>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
-    </CookiesProvider>
+    <QueryClientProvider client={queryClient}>
+      <CookiesProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </CookiesProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   </StrictMode>
 );

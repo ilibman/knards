@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
 import {
@@ -11,205 +12,146 @@ import {
 } from 'rsuite';
 import SearchIcon from '@rsuite/icons/Search';
 import AuthContext from '../context/AuthProvider';
-import api from '../api';
+import { useIntersection } from '../hooks';
+import {
+  getCardsQueryOptions,
+  getCardSeriesQueryOptions,
+  getTagsQueryOptions,
+  getCardPartialsQueryOptions
+} from '../query-client';
 import ListStatsAndRevise from '../components/ListStatsAndRevise';
+import {
+  CardSeries,
+  Tag,
+  CardPartial
+} from '../models';
 
 export default function List() {
   const { authTokens } = useContext(AuthContext);
-  const [params, setParams] = useState({});
-  const [cards, setCards] = useState([]);
-  const [cardSeries, setCardSeries] = useState({});
-  const [tags, setTags] = useState({});
-  const [preselectedTags, setPreselectedTags] = useState([]);
-  const [cardPartials, setCardPartials] = useState({});
+  const [params, setParams] = useState<{
+    series?: string;
+    tags?: string;
+    tagInclusion?: string;
+    fulltext?: string;
+  }>({});
+  const [preselectedTags, setPreselectedTags] = useState<Array<number>>([]);
+  const [preselectedTagsReady, setPreselectedTagsReady] = useState(false);
 
-  const [seriesPickerData, setSeriesPickerData] = useState([]);
-  const [tagPickerData, setTagPickerData] = useState([]);
-
-  const [isCardsLoading, setIsCardsLoading] = useState(true);
-  const [isCardSeriesLoading, setIsCardSeriesLoading] = useState(true);
-  const [isTagsLoading, setIsTagsLoading] = useState(true);
-  const [isCardPartialsLoading, setIsCardPartialsLoading] = useState(true);
+  const [seriesPickerData, setSeriesPickerData]
+    = useState<Array<{ label: string; value: string; }>>([]);
+  const [tagPickerData, setTagPickerData]
+    = useState<Array<{ label: string; value: string; }>>([]);
 
   const [cookies, setCookies, removeCookies] = useCookies(['tags']);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const {
+    data: cards,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
+    ...getCardsQueryOptions(authTokens.access, params)
+  });
 
-    const fetchCards = async () => {
-      // construct query params string from params object
-      let flattenedParams = Object.keys(params).reduce(function (r, k) {
-        return r = r + params[k] + '&';
-      }, '');
-      flattenedParams = flattenedParams.substring(
-        0,
-        flattenedParams.length - 1
+  const { data: cardSeries } = useQuery({
+    ...getCardSeriesQueryOptions(authTokens.access),
+    select: (result) => {
+      const cardSeriesMap: Record<number, CardSeries> = {};
+      result.map((_) => (
+        cardSeriesMap[_.id] = { ..._ }
+      ));
+      return cardSeriesMap;
+    }
+  });
+
+  useEffect(() => {
+    if (cardSeries) {
+      setSeriesPickerData(
+        Object.values(cardSeries).map((_) => ({ label: _.name, value: _.name }))
+      );
+    }
+  }, [cardSeries]);
+
+  const { data: tags } = useQuery({
+    ...getTagsQueryOptions(authTokens.access),
+    select: (result) => {
+      const tagsMap: Record<number, Tag> = {};
+      result.map((_) => (
+        tagsMap[_.id] = { ..._ }
+      ));
+      return tagsMap;
+    }
+  });
+
+  useEffect(() => {
+    // TODO: remove if when we're sure tags can't be empty
+    if (tags) {
+      setTagPickerData(
+        Object.values(tags).map((_) => ({ label: _.name, value: _.name }))
       );
 
-      try {
-        const response = await api.get(
-          `api/cards/cards/${flattenedParams ? `?${flattenedParams}` : ''}`,
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true,
-            signal: controller.signal
-          }
+      if (cookies.tags) {
+        const preselectedTagsIds
+          = JSON.stringify(cookies.tags).indexOf(',') !== -1
+            ? cookies.tags.split(',')
+            : cookies.tags;
+        params.tags = `tags=${preselectedTagsIds}`;
+        setParams({ ...params });
+        setPreselectedTags(
+          preselectedTagsIds.length
+            ? preselectedTagsIds.map((_: number) => tags[_]?.name)
+            : [tags[preselectedTagsIds]?.name]
         );
-        setCards(response.data);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsCardsLoading(false);
+        setPreselectedTagsReady(true);
       }
-    };
-
-    fetchCards();
-
-    return () => {
-      controller.abort();
     }
-  }, [params]);
+  }, [tags]);
 
-  useEffect(() => {
-
-    const fetchCardSeries = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/card-series/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        const cardSeriesMap = {};
-        response.data.map((_) => (
-          cardSeriesMap[_.id] = { ..._ }
-        ));
-        setSeriesPickerData(
-          response.data.map((_) => ({ label: _.name, value: _.name }))
-        );
-        setCardSeries(cardSeriesMap);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
+  const { data: cardPartials } = useQuery({
+    ...getCardPartialsQueryOptions(authTokens.access),
+    select: (result) => {
+      const cardPartialsMap: Record<number, Array<CardPartial>> = {};
+      result.forEach((_) => {
+        if (!cardPartialsMap[_.card]) {
+          cardPartialsMap[_.card] = [];
         }
-      } finally {
-        setIsCardSeriesLoading(false);
-      }
-    };
+        cardPartialsMap[_.card].push({ ..._ });
+      });
+      return cardPartialsMap;
+    }
+  });
 
-    fetchCardSeries();
-  }, []);
+  const cursorRef = useIntersection(() => {
+    fetchNextPage();
+  });
 
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/tags/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        const tagsMap = {};
-        response.data.map((_) => (
-          tagsMap[_.id] = { ..._ }
-        ));
-        setTagPickerData(
-          response.data.map((_) => ({ label: _.name, value: _.name }))
-        );
-        setTags(tagsMap);
-        
-        if (cookies.tags) {
-          const preselectedTagsIds
-            = JSON.stringify(cookies.tags).indexOf(',') !== -1
-              ? cookies.tags.split(',')
-              : cookies.tags;
-          params.tags = `tags=${preselectedTagsIds}`;
-          setParams({ ...params });
-          setPreselectedTags(
-            preselectedTagsIds.length
-              ? preselectedTagsIds.map((_) => tagsMap[_]?.name)
-              : [tagsMap[preselectedTagsIds]?.name]
-          );
-        }
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsTagsLoading(false);
-      }
-    };
+  function handleSeriesPickerChange(value: string | null) {
+    // TODO: remove this when we're sure cardSeries can't be empty
+    if (!cardSeries) {
+      return false;
+    }
 
-    fetchTags();
-  }, []);
-
-  useEffect(() => {
-    const fetchCardPartials = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/card-partials/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        const cardPartialsMap = {};
-        response.data.forEach((_) => {
-          if (!cardPartialsMap[_.card]) {
-            cardPartialsMap[_.card] = [];
-          }
-          cardPartialsMap[_.card].push({ ..._ });
-        });
-        setCardPartials(cardPartialsMap);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsCardPartialsLoading(false);
-      }
-    };
-
-    fetchCardPartials();
-  }, []);
-
-  function handleSeriesPickerChange(value) {
     if (!value || value.length === 0) {
       delete params.series;
       setParams({ ...params });
       return false;
     }
 
-    const flattenedSeries = Object.keys(cardSeries).reduce(function (r, k) {
-      return r.concat(cardSeries[k]);
-    }, []);
-
-    const selectedSeriesId = flattenedSeries.find((_) => (
+    const selectedSeriesId = Object.values(cardSeries).find((_) => (
       _.name === value
-    )).id;
+    ))?.id;
       
     params.series = `series=${selectedSeriesId}`
     setParams({ ...params });
   }
 
-  function handleTagSelect(value) {
-    const flattenedTags = Object.keys(tags).reduce(function (r, k) {
-      return r.concat(tags[k]);
-    }, []);
-    
-    const selectedTagIds = flattenedTags.filter((_) => (
+  function handleTagSelect(value: Array<string>) {
+    // TODO: remove this when we're sure tags can't be empty
+    if (!tags) {
+      return false;
+    }
+
+    const selectedTagIds = Object.values(tags).filter((_) => (
       value.includes(_.name)
     )).map((_) => _.id);
 
@@ -218,11 +160,16 @@ export default function List() {
     setParams({ ...params });
   }
 
-  function handleTagRemove(value) {
-    const tagId = Object.values(tags).find((_) => _.name === value).id;
+  function handleTagRemove(value: string) {
+    // TODO: remove this when we're sure tags can't be empty
+    if (!tags) {
+      return false;
+    }
+
+    const tagId = Object.values(tags).find((_) => _.name === value)?.id;
     const tagList
       = JSON.stringify(cookies.tags).indexOf(',') !== -1
-        ? cookies.tags.split(',').filter((_) => +_ !== tagId)
+        ? cookies.tags.split(',').filter((_: string) => +_ !== tagId)
         : [];
 
     if (tagList.length === 0) {
@@ -236,42 +183,40 @@ export default function List() {
     }
   }
 
-  function handleTagInclusionSettingChange(value) {
-    params.tagInclustion = `tag_inclusion=${value}`;
+  function handleTagInclusionSettingChange(value: string) {
+    params.tagInclusion = `tag_inclusion=${value}`;
     setParams({ ...params });
   }
 
-  function handleFulltextChange(value) {
-    if (value.target.value === '') {
+  function handleFulltextChange(event: React.ChangeEvent<HTMLInputElement>) {
+    if (event.target.value === '') {
       delete params.fulltext;
       setParams({ ...params });
       return false;
     }
       
-    params.fulltext = `fulltext=${value.target.value}`
+    params.fulltext = `fulltext=${event.target.value}`
     setParams({ ...params });
   }
 
-  function renderPartialText(content) {
-    return content.map((_) => (
-      _.children.map((__) => (
-        __.insetQuestion
-          ? '?'
-          : __.text
-      ))
-    )).flat().join(' ').substring(0, 100);
-  }
+  function renderPartialText(
+    content: Array<{
+      children: Array<{ text: string; insetQuestion: boolean; }>;
+      type: string;
+    }>) {
+      return content.map((_) => (
+        _.children.map((__) => (
+          __.insetQuestion
+            ? '?'
+            : __.text
+        ))
+      )).flat().join(' ').substring(0, 100);
+    }
 
   return (
     <>
-      {(
-        isCardSeriesLoading
-        || isTagsLoading
-      ) && <p>Loading...</p>}
-      {(
-        !isCardSeriesLoading
-        && !isTagsLoading
-      ) && (
+      {false && <p>Loading...</p>}
+      {true && (
         <>
           <div
             className="mt-2"
@@ -286,7 +231,7 @@ export default function List() {
               onChange={handleSeriesPickerChange}
             />
           </div>
-          <div id="tag-picker">
+          {preselectedTagsReady && <div id="tag-picker">
             <label
               className="mx-3 text-white font-base font-semibold text-lg"
             >Tags:</label>
@@ -301,12 +246,14 @@ export default function List() {
               name="tagInclusionSetting"
               inline
               style={{ width: 'calc(100% - 20px)', margin: '0 10px' }}
-              onChange={handleTagInclusionSettingChange}
+              onChange={(value) => {
+                handleTagInclusionSettingChange(String(value))
+              }}
             >
               <Radio className="text-lg" checked value="or">OR</Radio>
               <Radio className="text-lg" value="and">AND</Radio>
             </RadioGroup>
-          </div>
+          </div>}
           {false && (
             <div id="fulltext-search">
               <label
@@ -330,20 +277,10 @@ export default function List() {
           >
           </ListStatsAndRevise>
           <div>
-            {(
-              isCardsLoading
-              || isCardSeriesLoading
-              || isTagsLoading
-              || isCardPartialsLoading
-            ) && <p>Loading...</p>}
-            {(
-              !isCardsLoading
-              && !isCardSeriesLoading
-              && !isTagsLoading
-              && !isCardPartialsLoading
-            ) && (
+            {false && <p>Loading...</p>}
+            {true && (
               <div className="flex flex-col border-t-2">
-                {cards.map((_, i) => (
+                {cards?.map((_, i) => (
                   <Link
                     className="bg-brown-light border-b"
                     key={_.id}
@@ -397,6 +334,19 @@ export default function List() {
                     </div>
                   </Link>
                 ))}
+                <div
+                  className="flex justify-center my-10
+                    font-semibold text-lg
+                    this-should-be-at-the-end-of-the-list"
+                  ref={cursorRef}
+                >
+                  {!hasNextPage && <p className="text-white">
+                    No more cards.
+                  </p>}
+                  {isFetchingNextPage && <p className="text-white">
+                    Loading...
+                  </p>}
+                </div>
               </div>
             )}
           </div>
