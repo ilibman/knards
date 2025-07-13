@@ -24,6 +24,23 @@ export type Card = {
   updated_at: string;
 }
 
+export type CardForRevision = {
+  id: number;
+  title: string;
+  series_id: number;
+  series_name: string;
+  n_in_series: number;
+  tags_ids: Array<number>;
+  tags_names: Array<string>;
+  created_at: string;
+  owner_id: number;
+  owner_name: string;
+  revised: boolean;
+  score_id: number;
+  score: number;
+  weight: number;
+}
+
 export type CardsPaginated = {
   count: number;
   next: number | null;

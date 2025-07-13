@@ -271,10 +271,7 @@ export default function List() {
               </InputGroup>
             </div>
           )}
-          <ListStatsAndRevise
-            cards={cards}
-            tags={tags}
-          >
+          <ListStatsAndRevise queryParams={params}>
           </ListStatsAndRevise>
           <div>
             {false && <p>Loading...</p>}

@@ -5,109 +5,70 @@ import * as Accordion from '@radix-ui/react-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import AuthContext from '../context/AuthProvider';
 import api from '../api';
+import {
+  CardForRevision
+} from '../models';
 
-const ListStatsAndRevise = ({ ...props }) => {
+const ListStatsAndRevise = ({ queryParams }) => {
   const { authTokens } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [tagStatistics, setTagStatistics] = useState({});
-  const [cardset, setCardset] = useState([]);
-  const [isCardScoresLoading, setIsCardScoresLoading] = useState(false);
+  const [cardsetStatistics, setCardsetStatistics] = useState<{
+    cards_total: number;
+    cards_total_by_tags: Record<string, {
+      total: number;
+      to_revise: number;
+    }>;
+  }>({
+    cards_total: 0,
+    cards_total_by_tags: {}
+  });
+  const [cardset, setCardset] = useState<Array<CardForRevision>>([]);
+  const [isCardsetAndStatisticsLoading, setIsCardsetAndStatisticsLoading]
+    = useState(false);
 
   useEffect(() => {
-    const getScoresAndSetCardset = async () => {
-      setIsCardScoresLoading(true);
-      const today = new Date();
+    const getCardsetAndStatistics = async () => {
+      setIsCardsetAndStatisticsLoading(true);
+
+      // construct query params string from params object
+      let flattenedParams = Object.keys(queryParams).reduce(function (r, k) {
+        return r = r + (queryParams[k] ? queryParams[k] + '&' : '');
+      }, '');
+      flattenedParams = flattenedParams.substring(
+        0,
+        flattenedParams.length - 1
+      );
       
-      const cards = props.cards?.map((_) => (
-        {
-          id: _.id,
-          title: _.title,
-          series_id: _.card_series,
-          n_in_series: _.n_in_series,
-          tags: _.tags,
-          created_at: _.created_at,
-          owner: _.owner,
-          revised: false
+      try {
+        const response = await api.get(
+          'api/cards/cards/'
+            + `get_cardset_and_statistics_by_query_params/?${flattenedParams}`,
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`
+            },
+            withCredentials: true
+          }
+        );
+        setCardset([...response.data.cardset]);
+        setCardsetStatistics({
+          cards_total: response.data.cards_total,
+          cards_total_by_tags: response.data.cards_total_by_tags,
+        });
+      } catch (error: any) {
+        if (!error.response) {
+          console.error(error.message);
         }
-      ));
-      
-      cards?.forEach(async (_, i) => {
-        try {
-          const response = await api.get(
-            `api/cards/card-scores/?card=${_.id}`,
-            {
-              headers: {
-                Authorization: `JWT ${authTokens.access}`
-              },
-              withCredentials: true
-            }
-          );
-
-          _.score = response.data[0]?.score;
-          _.last_revised_at = response.data[0]?.last_revised_at;
-          _.card_score_id = response.data[0]?.id;
-
-          // calculate the amount of days passed since the last revision
-          const daysPassed = Math.round(Math.abs((
-            today - new Date(
-              response.data[0]?.last_revised_at
-              ? response.data[0]?.last_revised_at
-              : _.created_at
-            )
-          ) / (24 * 60 * 60 * 1000)));
-
-          // remove cards score of which is higher
-          // than the amount of days passed since last revision
-          if (_.score && _.score > daysPassed) {
-            _.revised = true;
-          }
-
-          if (daysPassed === 0) {
-            _.revised = true;
-          }
-
-          // calculate weight of the card based on its score and last revised date
-          _.weight
-            = 1000 * Math.exp(-(0.6 * (
-              response.data[0]?.score
-              ? response.data[0]?.score
-              : 0
-            )))
-            + 18 * Math.pow(daysPassed, 0.7);
-
-        } catch (error) {
-          if (!error.response) {
-            console.error(error.message);
-          }
-        } finally {
-          if (i === cards.length - 1) {
-            setCardset(cards);
-
-            const tagStatistics = {};
-            
-            cards.forEach((_) => {
-              const tagLine
-                = _.tags.sort().map((tagId) => props.tags[tagId]?.name).join(', ');
-              if (!tagStatistics[tagLine]) {
-                tagStatistics[tagLine] = [];
-                tagStatistics[tagLine].push(_);
-              } else {
-                tagStatistics[tagLine].push(_);
-              }
-            });
-        
-            setTagStatistics(tagStatistics);
-            setIsCardScoresLoading(false);
-          }
-        }
-      });
+      } finally {
+        setIsCardsetAndStatisticsLoading(false);
+      }
     }
 
-    getScoresAndSetCardset();
-  }, [props.cards, props.tags]);
+    getCardsetAndStatistics();
+  }, [queryParams]);
 
   function runRevise() {
-    const shuffleArray = (array) => {
+    const shuffleArray = (array: Array<any>) => {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
@@ -115,26 +76,11 @@ const ListStatsAndRevise = ({ ...props }) => {
     };
 
     const filteredCardset = cardset.filter((_) => !_.revised);
-    if (!isCardScoresLoading && filteredCardset.length > 0) {
+    if (!isCardsetAndStatisticsLoading && filteredCardset.length > 0) {
       shuffleArray(filteredCardset);
       filteredCardset.sort((a, b) => b.weight - a.weight);
 
-      localStorage.setItem('cardset', JSON.stringify(filteredCardset
-        .map((_) => (
-          {
-            id: _.id,
-            card_score_id: _.card_score_id,
-            title: _.title,
-            n_in_series: _.n_in_series,
-            series_id: _.series_id,
-            tags: _.tags,
-            created_at: _.created_at,
-            score: _.score ? _.score : 0,
-            owner: _.owner,
-            revised: _.revised
-          }
-        )
-      )));
+      localStorage.setItem('cardset', JSON.stringify(filteredCardset));
       navigate('/revise');
     }
   }
@@ -156,19 +102,19 @@ const ListStatsAndRevise = ({ ...props }) => {
             Revise cardset
           </div>
           <div className="text-white">
-            Total # of cards in the cardset: {props.cards?.length}
+            Total # of cards in the cardset: {cardsetStatistics.cards_total}
           </div>
           <ul className="ml-5">
-            {Object.values(tagStatistics).map((_, i) => (
+            {Object.values(cardsetStatistics.cards_total_by_tags).map((_, i) => (
               <li
                 className="text-white"
                 key={i}
               >
                 <span className="inline-flex text-white">
-                  {Object.keys(tagStatistics)[i]}
+                  {Object.keys(cardsetStatistics.cards_total_by_tags)[i]}
                 </span>:
-                &nbsp;{_.length}
-                &nbsp;({_.filter((__) => !__.revised).length} to revise)</li>
+                &nbsp;{_.total}
+                &nbsp;({_.to_revise} to revise)</li>
             ))}
           </ul>
         </AccordionContent>

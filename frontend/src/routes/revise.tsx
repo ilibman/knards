@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthProvider';
 import api from '../api';
 import { getNewScore } from '../utils';
+import {
+  CardForRevision
+} from '../models';
 import RevisePartialEditor
   from '../components/partial-editor/RevisePartialEditor';
 import PartialEditorWithVim
@@ -13,7 +16,7 @@ export default function Revise() {
   const { authTokens } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [cardset, setCardset] = useState(() => (
+  const [cardset, setCardset] = useState<Array<CardForRevision>>(() => (
     localStorage.getItem('cardset')
       ? JSON.parse(localStorage.getItem('cardset'))
       : null
@@ -200,14 +203,14 @@ export default function Revise() {
                 Title: {cardset[revisedCardIndex].title}
               </p>
             )}
-            {cardset[revisedCardIndex].series_id && (
+            {cardset[revisedCardIndex].series_name && (
               <p className="text-white text-lg font-base font-semibold">
-                Series: {cardset[revisedCardIndex].series_id}
+                Series: {cardset[revisedCardIndex].series_name}
               </p>
             )}
-            {cardset[revisedCardIndex].tags && (
+            {cardset[revisedCardIndex].tags_names && (
               <p className="text-white text-lg font-base font-semibold">
-                Tags: {cardset[revisedCardIndex].tags.join(',')}
+                Tags: {cardset[revisedCardIndex].tags_names.join(', ')}
               </p>
             )}
             {cardset[revisedCardIndex].created_at && (
@@ -220,9 +223,9 @@ export default function Revise() {
                 )}
               </p>
             )}
-            {cardset[revisedCardIndex].owner && (
+            {cardset[revisedCardIndex].owner_name && (
               <p className="text-white text-lg font-base font-semibold">
-                Created by: {cardset[revisedCardIndex].owner}
+                Created by: {cardset[revisedCardIndex].owner_name}
               </p>
             )}
           </div>

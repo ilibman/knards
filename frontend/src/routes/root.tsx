@@ -31,7 +31,7 @@ export default function Root() {
   }, [location]);
 
   // i implemented this here, because i want revised cards to be saved
-  // upon each route change, if there're any revised cards, on the background
+  // upon each route change, if there're any revised cards, in the background
   async function saveCardScore(cardScoreId, cardId, newScore) {
     try {
       const response = cardScoreId
