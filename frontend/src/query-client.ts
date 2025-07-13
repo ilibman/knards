@@ -1,8 +1,10 @@
 import {
   QueryClient,
+  QueryCache,
   queryOptions,
   infiniteQueryOptions
 } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
 import api from './api';
 import {
   CardsPaginated,
@@ -11,7 +13,24 @@ import {
   CardPartial
 } from './models';
 
-export const queryClient = new QueryClient();
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // staleTime: Infinity,
+      staleTime: 1 * 60 * 1000, // cache the data for 1 min
+      // gcTime: Infinity,
+      refetchOnWindowFocus: false,
+      // refetchOnMount: false,
+      refetchOnReconnect: false,
+    },
+    mutations: {}
+  },
+  queryCache: new QueryCache({
+    onError: (error) => {
+      toast(`Something went wrong: ${error.message}`);
+    }
+  }),
+});
 
 export function getCardsQueryOptions(accessToken: string, queryParams: any) {
   return infiniteQueryOptions({
@@ -43,11 +62,6 @@ export function getCardsQueryOptions(accessToken: string, queryParams: any) {
     initialPageParam: 1,
     getNextPageParam: (result) => result.next,
     select: (result) => result.pages.flatMap((_) => _.results).flat(),
-    staleTime: Infinity,
-    gcTime: Infinity,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
   });
 }
 
@@ -68,11 +82,6 @@ export function getCardSeriesQueryOptions(accessToken: string) {
 
       return response.data;
     },
-    staleTime: Infinity,
-    gcTime: Infinity,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
   });
 }
 

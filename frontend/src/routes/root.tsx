@@ -1,5 +1,6 @@
 import { useEffect, useContext } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import { AuthProvider} from '../context/AuthProvider';
 import AuthContext from '../context/AuthProvider';
 import Header from '../components/Header';
@@ -85,6 +86,7 @@ export default function Root() {
       <Header />
       <Outlet />
       <Footer />
+      <ToastContainer />
     </AuthProvider>
   );
 }
