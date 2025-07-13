@@ -82,6 +82,13 @@ class Card(models.Model):
             + self.created_at.strftime('%d-%m-%Y')
         )
 
+    @property
+    def tags_set_str(self):
+        result = []
+        for tag in self.tags.all():
+            result.append(tag.name)
+        return ', '.join(result)
+
     class Meta:
         ordering = ['pk']
 
@@ -128,3 +135,6 @@ class CardScore(models.Model):
         null=False
     )
     last_revised_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('card', 'owner')
