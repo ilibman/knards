@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import {
   Input,
   InputGroup,
@@ -8,18 +9,31 @@ import {
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 import AuthContext from '../context/AuthProvider';
+import {
+  createNewCard,
+  createNewCardSeries,
+  createNewTag,
+  createNewCardPartial
+} from '../query-client';
+import api from '../api';
+import {
+  Card,
+  CardSeries,
+  Tag,
+  CardPartial
+} from '../models';
 import PartialEditor from '../components/partial-editor/PartialEditor';
 import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
-import api from '../api';
 
 export default function New() {
   const { authTokens } = useContext(AuthContext);
 
-  const [card, setCard] = useState({});
-  const [cardSeries, setCardSeries] = useState([]);
-  const [tags, setTags] = useState([]);
-  const [cardPartials, setCardPartials] = useState([]);
+  const [card, setCard] = useState<Partial<Card>>({});
+  const [cardSeries, setCardSeries] = useState<Array<CardSeries>>([]);
+  const [tags, setTags] = useState<Array<Tag>>([]);
+  const [cardPartials, setCardPartials]
+    = useState<Array<Record<string, unknown>>>([]);
   
   const [seriesPickerData, setSeriesPickerData] = useState([]);
   const [tagPickerData, setTagPickerData] = useState([]);
@@ -30,8 +44,44 @@ export default function New() {
 
   const [activePartial, setActivePartial] = useState(null);
 
-  const seriesRef = createRef();
-  const tagsRef = createRef();
+  const seriesRef = createRef<any>();
+  const tagsRef = createRef<any>();
+
+  const createNewCardMutation = useMutation({
+    mutationFn: (
+      { accessToken, cardData }:
+      { accessToken: string; cardData: Partial<Card>; }
+    ) => (
+      createNewCard(accessToken, cardData)
+    )
+  });
+
+  const createNewCardSeriesMutation = useMutation({
+    mutationFn: (
+      { accessToken, seriesName }:
+      { accessToken: string; seriesName: string; }
+    ) => (
+      createNewCardSeries(accessToken, seriesName)
+    )
+  });
+
+  const createNewTagMutation = useMutation({
+    mutationFn: (
+      { accessToken, tagName }:
+      { accessToken: string; tagName: string; }
+    ) => (
+      createNewTag(accessToken, tagName)
+    )
+  });
+
+  const createNewCardPartialMutation = useMutation({
+    mutationFn: (
+      { accessToken, cardPartialData }:
+      { accessToken: string; cardPartialData: Partial<CardPartial>; }
+    ) => (
+      createNewCardPartial(accessToken, cardPartialData)
+    )
+  });
   
   useEffect(() => {
     const fetchCardSeries = async () => {
@@ -93,75 +143,36 @@ export default function New() {
     fetchTags();
   }, []);
 
-  function handleSeriesPickerCreate(value) {
-    const createSeries = async () => {
-      try {
-        const response = await api.post(
-          'api/cards/card-series/',
-          { name: value },
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`,
-              'X-CSRFToken': document.cookie.replace(
-                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-              )
-            },
-            withCredentials: true
-          }
-        );
-        const cardSeriesMap = { ...cardSeries };
-        cardSeriesMap[response.data.id] = { ...response.data };
-        setCardSeries(cardSeriesMap);
-        setSeriesPickerData(
-          seriesPickerData.concat([{ label: value, value: response.data.id }])
-        );
+  function handleSeriesPickerCreate(seriesName: string) {
+    createNewCardSeriesMutation.mutate({
+      accessToken: authTokens.access,
+      seriesName
+    }, {
+      onSuccess(responseData: CardSeries) {
         setCard({
           ...card,
           n_in_series: 1,
-          card_series: response.data.id
+          card_series: responseData.id
         });
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
       }
-    };
-
-    createSeries();
+    });
   }
 
-  function handleCreateTag(value, item, event) {
-    const createTag = async (value) => {
-      try {
-        const response = await api.post(
-          'api/cards/tags/',
-          { name: value },
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`,
-              'X-CSRFToken': document.cookie.replace(
-                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-              )
-            },
-            withCredentials: true
-          }
-        );
-
+  function handleCreateTag(newTag: { value: string; label: string; }) {
+    createNewTagMutation.mutate({
+      accessToken: authTokens.access,
+      tagName: newTag.label
+    }, {
+      onSuccess(responseData: Tag) {
         setTags([
           ...tags,
-          { ...response.data }
+          { ...responseData }
         ]);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
       }
-    };
-
-    createTag(item.label);
+    });
   }
 
-  function addPartial(index, type) {
+  function addPartial(index: number, type: string) {
     cardPartials.splice(index, 0, {
       content: [{
         type,
@@ -172,7 +183,7 @@ export default function New() {
         children: [{ text: '' }]
       }]
     });
-    setCardPartials(cardPartials.map((_, i) => (
+    setCardPartials(cardPartials.map((_) => (
       { ..._ }
     )));
   }
@@ -180,15 +191,15 @@ export default function New() {
   async function saveCard() {
     const cardToSave = { ...card };
     const seriesId = Object.values(cardSeries).find(
-      (_) => seriesRef.current.target.textContent === _.name
+      (_) => seriesRef.current?.target.textContent === _.name
     )?.id;
     if (seriesId) {
       cardToSave.card_series = seriesId;
     }
-    tagsRef.current.target
+    tagsRef.current?.target
       .children[0].children[0].children[0]
       .value.split(',')
-      .forEach((_) => {
+      .forEach((_: string) => {
         if (!cardToSave.tags) {
           cardToSave.tags = [];
         }
@@ -201,71 +212,46 @@ export default function New() {
 
     setIsCardSaving(true);
 
-    try {
-      const response = await api.post(
-        `api/cards/cards/`,
-        { ...cardToSave },
-        {
-          headers: {
-            Authorization: `JWT ${authTokens.access}`,
-            'X-CSRFToken': document.cookie.replace(
-              /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-            )
-          },
-          withCredentials: true
+    createNewCardMutation.mutate({
+      accessToken: authTokens.access,
+      cardData: cardToSave
+    }, {
+      onSuccess(responseData: Card) {
+        setCard(responseData);
+
+        if (cardPartials.length === 0) {
+          setIsCardSaving(false);
+          setCard({});
         }
-      );
-      setCard(response.data);
-    } catch (error) {
-      if (!error.response) {
-        console.error(error.message);
       }
-    } finally {
-      if (cardPartials.length === 0) {
-        setIsCardSaving(false);
-        setCard({});
-      }
-    }
+    });
   }
 
   useEffect(() => {
     if (card.id) {
       // save partials
       cardPartials.forEach(async (_, i) => {
-        try {
-          await api.post(
-            'api/cards/card-partials/',
-            {
-              ..._,
-              card: card.id,
-              position: i + 1
-            },
-            {
-              headers: {
-                Authorization: `JWT ${authTokens.access}`,
-                'X-CSRFToken': document.cookie.replace(
-                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-                )
-              },
-              withCredentials: true
+        createNewCardPartialMutation.mutate({
+          accessToken: authTokens.access,
+          cardPartialData: {
+            ..._,
+            card: card.id,
+            position: i + 1
+          }
+        }, {
+          onSuccess() {
+            if (i === cardPartials.length - 1) {
+              setIsCardSaving(false);
+              setCard({});
+              setCardPartials([]);
             }
-          );
-        } catch (error) {
-          if (!error.response) {
-            console.error(error.message);
           }
-        } finally {
-          if (i === cardPartials.length - 1) {
-            setIsCardSaving(false);
-            setCard({});
-            setCardPartials([]);
-          }
-        }
+        });
       });
     }
   }, [card.id]);
 
-  function handlePartialContentChange(value, partialIndex) {
+  function handlePartialContentChange(value: string, partialIndex: number) {
     setCardPartials(cardPartials.map((_, i) => {
       if (i === partialIndex) {
         return {
@@ -278,7 +264,7 @@ export default function New() {
     }));
   }
 
-  function handlePartialIsPromptChange(value, partialIndex) {
+  function handlePartialIsPromptChange(value: string, partialIndex: number) {
     setCardPartials(cardPartials.map((_, i) => {
       if (i === partialIndex) {
         return {
@@ -291,7 +277,10 @@ export default function New() {
     }));
   }
 
-  function handlePromptInitialContentChange(value, partialIndex) {
+  function handlePromptInitialContentChange(
+    value: string,
+    partialIndex: number
+  ) {
     setCardPartials(cardPartials.map((_, i) => {
       if (i === partialIndex) {
         return {
@@ -304,7 +293,9 @@ export default function New() {
     }));
   }
 
-  function renderReadOnlyPartial(content) {
+  function renderReadOnlyPartial(content: Array<{
+    children: Array<Record<string, unknown>>
+  }>) {
     return (
       <>
         {content.map((_, i) => (
@@ -392,7 +383,7 @@ export default function New() {
               locale={{ createOption: 'New tag: {0}' }}
               data={tagPickerData}
               style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              onCreate={(value, item, event) => handleCreateTag(value, item, event)}
+              onCreate={(selectedTags, newTag) => handleCreateTag(newTag)}
               ref={tagsRef}
             />
           </div>
@@ -433,18 +424,18 @@ export default function New() {
                       promptInitialContent={_.prompt_initial_content}
                       onClick={() => setActivePartial(partialIndex)}
                       onContentChange={
-                        (value) => handlePartialContentChange(
+                        (value: string) => handlePartialContentChange(
                           value,
                           partialIndex
                         )
                       }
-                      onIsPromptChange={(value) =>
+                      onIsPromptChange={(value: string) =>
                         handlePartialIsPromptChange(
                           value,
                           partialIndex
                         )
                       }
-                      onPromptInitialContentChange={(value) =>
+                      onPromptInitialContentChange={(value: string) =>
                         handlePromptInitialContentChange(
                           value,
                           partialIndex
@@ -464,18 +455,18 @@ export default function New() {
                       isActivePartial={true}
                       onClick={() => setActivePartial(partialIndex)}
                       onContentChange={
-                        (value) => handlePartialContentChange(
+                        (value: string) => handlePartialContentChange(
                           value,
                           partialIndex
                         )
                       }
-                      onIsPromptChange={(value) =>
+                      onIsPromptChange={(value: string) =>
                         handlePartialIsPromptChange(
                           value,
                           partialIndex
                         )
                       }
-                      onPromptInitialContentChange={(value) =>
+                      onPromptInitialContentChange={(value: string) =>
                         handlePromptInitialContentChange(
                           value,
                           partialIndex

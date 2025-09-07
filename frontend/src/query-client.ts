@@ -8,9 +8,10 @@ import { toast } from 'react-toastify';
 import api from './api';
 import {
   CardsPaginated,
+  Card,
   CardSeries,
   Tag,
-  CardPartial
+  CardPartial,
 } from './models';
 
 export const queryClient = new QueryClient({
@@ -123,4 +124,110 @@ export function getCardPartialsQueryOptions(accessToken: string) {
       return response.data;
     }
   });
+}
+
+export async function createNewCard(
+  accessToken: string,
+  cardData: Partial<Card>
+) {
+  const response = await api.post(
+    'api/cards/cards/',
+    { ...cardData },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function updateCard(
+  accessToken: string,
+  cardId: number,
+  cardData: Partial<Card>
+) {
+  const response = await api.patch(
+    `api/cards/cards/${cardId}/`,
+    { ...cardData },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function createNewCardSeries(
+  accessToken: string,
+  seriesName: string
+) {
+  const response = await api.post(
+    'api/cards/card-series/',
+    { name: seriesName },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function createNewTag(
+  accessToken: string,
+  tagName: string
+) {
+  const response = await api.post(
+    'api/cards/tags/',
+    { name: tagName },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function createNewCardPartial(
+  accessToken: string,
+  cardPartialData: Partial<CardPartial>
+) {
+  const response = await api.post(
+    'api/cards/card-partials/',
+    { ...cardPartialData },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
 }
