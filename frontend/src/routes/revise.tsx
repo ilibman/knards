@@ -334,8 +334,16 @@ export default function Revise() {
           </div>
         </div>
       )}
-      {(isFirstCardPartialsLoading || arePartialsHidden) && <p>Loading...</p>}
-      {(!isFirstCardPartialsLoading && !arePartialsHidden) && (
+      {(
+        isFirstCardPartialsLoading
+          || arePartialsHidden
+          || !reviseCardPartials[revisedCardIndex]
+      ) && <p>Loading...</p>}
+      {(
+        !isFirstCardPartialsLoading
+          && !arePartialsHidden
+          && reviseCardPartials[revisedCardIndex]
+      ) && (
         <div className="flex flex-col w-full pb-[122px] p-3">
           {reviseCardPartials[revisedCardIndex].map((_, i) => (
             <div className="flex flex-col mb-3 min-[1440px]:flex-row" key={i}>
