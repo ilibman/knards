@@ -1,7 +1,7 @@
 #!/bin/bash
 
-docker run -it -e POSTGRES_PASSWORD=postgres -p 5432:5432 --rm -d postgres:16.2
-ID=$(docker ps | grep "postgres:16.2" | cut -d' ' -f 1)
+docker run -it -e POSTGRES_PASSWORD=postgres -p 5432:5432 --rm -d postgres:17
+ID=$(docker ps | grep "postgres:17" | cut -d' ' -f 1)
 docker cp ./db.dump $ID:/db.dump
 sleep 5
 docker exec -it $ID psql -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
