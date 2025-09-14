@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
 import { RxHamburgerMenu, RxCross2 } from 'react-icons/rx';
-import AuthContext from '../context/AuthProvider';
+import useAuth from '../context/AuthProvider';
 import './Header.scss';
 
 export default function Header() {
-  const { logout } = useContext(AuthContext);
+  const { logout } = useAuth();
   const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

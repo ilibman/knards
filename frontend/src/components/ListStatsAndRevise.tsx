@@ -1,16 +1,24 @@
-import { forwardRef, useState, useEffect, useContext } from 'react';
+import {
+  forwardRef,
+  useState,
+  useEffect,
+  HTMLAttributes,
+  ReactNode
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import * as Accordion from '@radix-ui/react-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
-import AuthContext from '../context/AuthProvider';
+import useAuth from '../context/AuthProvider';
 import api from '../api';
 import {
   CardForRevision
 } from '../models';
 
-const ListStatsAndRevise = ({ queryParams }) => {
-  const { authTokens } = useContext(AuthContext);
+const ListStatsAndRevise = (
+  { queryParams }: { queryParams: Record<string, unknown>; }
+) => {
+  const { authTokens } = useAuth();
   const navigate = useNavigate();
   const [cardsetStatistics, setCardsetStatistics] = useState<{
     cards_total: number;
@@ -123,7 +131,14 @@ const ListStatsAndRevise = ({ queryParams }) => {
   );
 }
 
-const AccordionItem = forwardRef(({ children, className, ...props }, forwardedRef) => (
+interface AccordionItemProps extends HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+  value: string;
+}
+
+const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>((
+  { children, className, ...props }, forwardedRef
+) => (
   <Accordion.Item
     className={classNames(
       `mt-px
@@ -131,14 +146,20 @@ const AccordionItem = forwardRef(({ children, className, ...props }, forwardedRe
         first:mt-0 focus-within:relative focus-within:z-10`,
       className
     )}
-    {...props}
     ref={forwardedRef}
+    {...props}
   >
     {children}
   </Accordion.Item>
 ));
 
-const AccordionTrigger = forwardRef(({ children, className, ...props }, forwardedRef) => (
+interface AccordionTriggerProps extends HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+}
+
+const AccordionTrigger = forwardRef<HTMLDivElement, AccordionTriggerProps>((
+  { children, className, ...props }, forwardedRef
+) => (
   <Accordion.Header className="flex">
     <Accordion.Trigger
       className={classNames(
@@ -161,7 +182,13 @@ const AccordionTrigger = forwardRef(({ children, className, ...props }, forwarde
   </Accordion.Header>
 ));
 
-const AccordionContent = forwardRef(({ children, className, ...props }, forwardedRef) => (
+interface AccordionContentProps extends HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+}
+
+const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>((
+  { children, className, ...props }, forwardedRef
+) => (
   <Accordion.Content
     className={classNames(
       'overflow-hidden',

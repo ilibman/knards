@@ -68,7 +68,7 @@ export default function Registration() {
     setSuccess(true);
 
     try {
-      const response = await api.post(
+      await api.post(
         'auth/users/',
         JSON.stringify({
           username,
@@ -85,8 +85,7 @@ export default function Registration() {
           withCredentials: true
         }
       );
-      console.log(response.data);
-    } catch (error) {
+    } catch (error: any) {
       if (!error.response) {
         setErrorMsg('No server response');
       } else if (error.response.status === 400) {

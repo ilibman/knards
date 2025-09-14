@@ -1,17 +1,37 @@
-import { createContext, useState, useEffect } from 'react';
+import {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+  Dispatch,
+  SetStateAction
+} from 'react';
 import api from '../api';
 
-const AuthContext = createContext({});
+interface AuthContextType {
+  authTokens: {
+    access: string;
+  };
+  setAuthTokens: Dispatch<SetStateAction<{
+    access: string;
+  } | null>>;
+  userId: number;
+  setUserId: Dispatch<SetStateAction<number | null>>;
+  logout: () => void;
+}
 
-export const AuthProvider = ({ children }) => {
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authTokens, setAuthTokens] = useState(() => (
     localStorage.getItem('authTokens')
-      ? JSON.parse(localStorage.getItem('authTokens'))
+      ? JSON.parse(localStorage.getItem('authTokens')!)
       : null
   ));
   const [userId, setUserId] = useState(() => (
     localStorage.getItem('userId')
-      ? JSON.parse(localStorage.getItem('userId'))
+      ? JSON.parse(localStorage.getItem('userId')!)
       : null
   ));
   const [loading, setLoading] = useState(true);
@@ -57,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       if (loading) {
         setLoading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       if (!error.response) {
         console.error('No server response');
       } else {
@@ -78,4 +98,12 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
-export default AuthContext;
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export default useAuth;

@@ -1,9 +1,8 @@
-import { useContext } from 'react';
 import { useLocation, Navigate, Outlet } from 'react-router-dom';
-import AuthContext from '../context/AuthProvider';
+import useAuth from '../context/AuthProvider';
 
 export default function RequireAuth() {
-  const { authTokens } = useContext(AuthContext);
+  const { authTokens } = useAuth();
   const location = useLocation();
   
   return (

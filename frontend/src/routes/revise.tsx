@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthContext from '../context/AuthProvider';
+import useAuth from '../context/AuthProvider';
 import api from '../api';
 import { getNewScore } from '../utils';
 import {
@@ -13,7 +13,7 @@ import PartialEditorWithVim
 import './revise.scss';
 
 export default function Revise() {
-  const { authTokens } = useContext(AuthContext);
+  const { authTokens } = useAuth();
   const navigate = useNavigate();
 
   const [cardset, setCardset] = useState<Array<CardForRevision>>(() => (
@@ -143,7 +143,7 @@ export default function Revise() {
               ))]
             }
           });
-        } catch (error) {
+        } catch (error: any) {
           if (!error.response) {
             console.error(error.message);
           }

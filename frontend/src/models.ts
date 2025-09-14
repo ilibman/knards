@@ -19,6 +19,7 @@ export type Card = {
   n_in_series: number;
   title: string;
   tags: Array<Tag | number>;
+  tagsNames: Array<string>;
   owner: number;
   created_at: string;
   updated_at: string;

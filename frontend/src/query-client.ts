@@ -20,9 +20,9 @@ export const queryClient = new QueryClient({
       // staleTime: Infinity,
       staleTime: 1 * 60 * 1000, // cache the data for 1 min
       // gcTime: Infinity,
-      refetchOnWindowFocus: false,
-      // refetchOnMount: false,
-      refetchOnReconnect: false,
+      // refetchOnWindowFocus: false,
+      refetchOnMount: 'always',
+      // refetchOnReconnect: false,
     },
     mutations: {}
   },
@@ -35,7 +35,7 @@ export const queryClient = new QueryClient({
 
 export function getCardsQueryOptions(accessToken: string, queryParams: any) {
   return infiniteQueryOptions({
-    queryKey: ['cards', 'list', queryParams],
+    queryKey: ['cards', queryParams],
     queryFn: async (meta) => {
       // construct query params string from params object
       let flattenedParams = Object.keys(queryParams).reduce(function (r, k) {
@@ -66,9 +66,32 @@ export function getCardsQueryOptions(accessToken: string, queryParams: any) {
   });
 }
 
+export function getCardQueryOptions(
+  accessToken: string,
+  cardId: number
+) {
+  return queryOptions({
+    queryKey: ['cards', cardId],
+    queryFn: async (meta) => {
+      const response = await api.get<Card>(
+        `api/cards/cards/${cardId}/`,
+        {
+          headers: {
+            Authorization: `JWT ${accessToken}`
+          },
+          withCredentials: true,
+          signal: meta.signal
+        }
+      );
+    
+      return response.data;
+    }
+  });
+}
+
 export function getCardSeriesQueryOptions(accessToken: string) {
   return queryOptions({
-    queryKey: ['card_series', 'list'],
+    queryKey: ['card_series'],
     queryFn: async (meta) => {
       const response = await api.get<Array<CardSeries>>(
         'api/cards/card-series/',
@@ -88,7 +111,7 @@ export function getCardSeriesQueryOptions(accessToken: string) {
 
 export function getTagsQueryOptions(accessToken: string) {
   return queryOptions({
-    queryKey: ['tags', 'list'],
+    queryKey: ['tags'],
     queryFn: async (meta) => {
       const response = await api.get<Array<Tag>>(
         'api/cards/tags/',
@@ -108,10 +131,33 @@ export function getTagsQueryOptions(accessToken: string) {
 
 export function getCardPartialsQueryOptions(accessToken: string) {
   return queryOptions({
-    queryKey: ['card_partials', 'list'],
+    queryKey: ['card_partials'],
     queryFn: async (meta) => {
       const response = await api.get<Array<CardPartial>>(
         'api/cards/card-partials/',
+        {
+          headers: {
+            Authorization: `JWT ${accessToken}`
+          },
+          withCredentials: true,
+          signal: meta.signal
+        }
+      );
+    
+      return response.data;
+    }
+  });
+}
+
+export function getCardPartialsForCardQueryOptions(
+  accessToken: string,
+  cardId: number
+) {
+  return queryOptions({
+    queryKey: ['card_partials', cardId],
+    queryFn: async (meta) => {
+      const response = await api.get<Array<CardPartial>>(
+        `api/cards/card-partials/?card=${cardId}`,
         {
           headers: {
             Authorization: `JWT ${accessToken}`

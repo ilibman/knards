@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
@@ -11,7 +11,8 @@ import {
   RadioGroup
 } from 'rsuite';
 import SearchIcon from '@rsuite/icons/Search';
-import AuthContext from '../context/AuthProvider';
+
+import useAuth from '../context/AuthProvider';
 import { useIntersection } from '../hooks';
 import {
   getCardsQueryOptions,
@@ -19,15 +20,15 @@ import {
   getTagsQueryOptions,
   getCardPartialsQueryOptions
 } from '../query-client';
-import ListStatsAndRevise from '../components/ListStatsAndRevise';
 import {
   CardSeries,
   Tag,
   CardPartial
 } from '../models';
+import ListStatsAndRevise from '../components/ListStatsAndRevise';
 
 export default function List() {
-  const { authTokens } = useContext(AuthContext);
+  const { authTokens } = useAuth();
   const [params, setParams] = useState<{
     series?: string;
     tags?: string;

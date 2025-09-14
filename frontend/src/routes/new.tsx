@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, createRef } from 'react';
+import { useState, useEffect, createRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
   Input,
@@ -8,7 +8,7 @@ import {
 } from 'rsuite';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
-import AuthContext from '../context/AuthProvider';
+import useAuth from '../context/AuthProvider';
 import {
   createNewCard,
   createNewCardSeries,
@@ -27,7 +27,7 @@ import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
 
 export default function New() {
-  const { authTokens } = useContext(AuthContext);
+  const { authTokens } = useAuth();
 
   const [card, setCard] = useState<Partial<Card>>({});
   const [cardSeries, setCardSeries] = useState<Array<CardSeries>>([]);

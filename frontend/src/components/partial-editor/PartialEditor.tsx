@@ -31,7 +31,7 @@ export default function PartialEditor({ ...props }) {
     if (selectedNode && selectedNodeType === 'inset-question') {
       // if we've got a selection, mark that selection
       // otherwise - the whole node
-      if (editor.selection.anchor.offset !== editor.selection.focus.offset) {
+      if (editor.selection!.anchor.offset !== editor.selection!.focus.offset) {
         Editor.removeMark(editor, 'insetQuestion');
       } else {
         Transforms.setNodes(
@@ -49,7 +49,7 @@ export default function PartialEditor({ ...props }) {
         });
       }
     } else {
-      if (editor.selection.anchor.offset !== editor.selection.focus.offset) {
+      if (editor.selection!.anchor.offset !== editor.selection!.focus.offset) {
         Editor.addMark(editor, 'insetQuestion', true);
       } else {     
         Transforms.setNodes(

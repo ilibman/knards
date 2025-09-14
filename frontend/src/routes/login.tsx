@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect, useContext } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import AuthContext from '../context/AuthProvider';
+import useAuth from '../context/AuthProvider';
 import api from '../api';
 
 export default function Login() {
-  const { setAuthTokens, setUserId } = useContext(AuthContext);
+  const { setAuthTokens, setUserId } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,7 +56,7 @@ export default function Login() {
       setPassword('');
 
       navigate(from, { replace: true });
-    } catch (error) {
+    } catch (error: any) {
       console.log(error)
       if (!error.response) {
         setErrorMsg('No server response');

@@ -31,7 +31,7 @@ export default function Activation() {
       );
 
       setVerified(true);
-    } catch (error) {
+    } catch (error: any) {
       if (!error.response) {
         setErrorMsg('No server response');
       } else if (error.response.status === 400) {

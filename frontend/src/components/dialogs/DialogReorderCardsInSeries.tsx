@@ -1,15 +1,25 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import Sortable from 'sortablejs';
 import { RxCross2 } from 'react-icons/rx';
 import { GoListOrdered } from 'react-icons/go';
 import { FaCheck } from 'react-icons/fa';
-import AuthContext from '../../context/AuthProvider';
+import useAuth from '../../context/AuthProvider';
 import api from '../../api';
+import {
+  Card,
+  CardSeries
+} from '../../models';
 
-export default function DialogReorderCardsInSeries(props) {
-  const { authTokens } = useContext(AuthContext);
-  const [cards, setCards] = useState([]);
+interface Props {
+  series: CardSeries;
+  cardsFromSeries: Array<Card>;
+  onSave: (value: any) => void;
+}
+
+export default function DialogReorderCardsInSeries(props: Props) {
+  const { authTokens } = useAuth();
+  const [cards, setCards] = useState<Array<Card>>([]);
   const [cardPartialsExcerpts, setCardPartialsExcerpts] = useState({});
   const [dialogOpened, setDialogOpened] = useState(false);
   
@@ -29,8 +39,9 @@ export default function DialogReorderCardsInSeries(props) {
         new Sortable(listElement, {
           animation: 0,
           forceFallback: true,
-          onEnd: function(event) {
-            const newCards = Array.from(event.target.childNodes).map((_) => {
+          onEnd: function(event: Event) {
+            const htmlElement = event.target as HTMLElement;
+            const newCards = Array.from(htmlElement.childNodes).map((_) => {
               const card = cards.find((__) => __.id === +_.id);
               return { ...card };
             }).map((_, i) => (
@@ -47,7 +58,7 @@ export default function DialogReorderCardsInSeries(props) {
   }, [dialogOpened]);
 
   useEffect(() => {
-    const fetchCardPartials = async (cardId) => {
+    const fetchCardPartials = async (cardId: number) => {
       try {
         const response = await api.get(
           `api/cards/card-partials/?card=${cardId}`,
@@ -64,7 +75,7 @@ export default function DialogReorderCardsInSeries(props) {
             [cardId]: response.data[0]?.content[0].children[0].text
           }
         ));
-      } catch (error) {
+      } catch (error: any) {
         if (!error.response) {
           console.error(error.message);
         }
@@ -122,7 +133,7 @@ export default function DialogReorderCardsInSeries(props) {
               className="w-full mt-3"
               id="items"
             >
-              {cards.map((item, i) => (
+              {cards.map((item) => (
                 <li
                   className="min-h-[29px] px-2 font-semibold text-lg border-b
                     cursor-move

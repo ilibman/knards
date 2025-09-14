@@ -1,4 +1,5 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Input,
@@ -6,159 +7,199 @@ import {
   InputPicker,
   TagPicker,
 } from 'rsuite';
+import { ItemDataType } from 'rsuite/esm/MultiCascadeTree';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
-import AuthContext from '../context/AuthProvider';
+
+import useAuth from '../context/AuthProvider';
+import api from '../api';
+import {
+  getCardQueryOptions,
+  getCardSeriesQueryOptions,
+  getTagsQueryOptions,
+  getCardPartialsForCardQueryOptions,
+  createNewCardSeries,
+  createNewTag
+} from '../query-client';
+import {
+  Card,
+  CardSeries,
+  Tag,
+  CardPartial
+} from '../models';
 import PartialEditor from '../components/partial-editor/PartialEditor';
 import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
 import DialogReorderCardsInSeries
   from '../components/dialogs/DialogReorderCardsInSeries';
-import api from '../api';
 
 export default function Edit() {
-  const { authTokens } = useContext(AuthContext);
+  const { authTokens } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  const [card, setCard] = useState<Partial<Card>>({});
+  const [cardSeries, setCardSeries] = useState<Record<number, CardSeries>>({});
+  const [tags, setTags] = useState<Record<number, Tag>>({});
+  const [cardPartials, setCardPartials]
+    = useState<Array<CardPartial>>([]);
+  const [cardsFromSeries, setCardsFromSeries] = useState<Array<Card>>([]);
 
-  const [card, setCard] = useState({});
-  const [cardSeries, setCardSeries] = useState({});
-  const [cardsFromSeries, setCardsFromSeries] = useState([]);
-  const [tags, setTags] = useState({});
-  const [cardPartials, setCardPartials] = useState([]);
-
-  const [seriesPickerData, setSeriesPickerData] = useState([]);
-  const [tagPickerData, setTagPickerData] = useState([]);
+  const [seriesPickerData, setSeriesPickerData]
+    = useState<Array<{ label: string; value: number; }>>([]);
+  const [tagPickerData, setTagPickerData]
+    = useState<Array<{ label: string; value: string; }>>([]);
 
   const [isCardInSeriesOrderChanged, setIsCardInSeriesOrderChanged]
     = useState(false);
 
-  const [isCardLoading, setIsCardLoading] = useState(true);
-  const [isCardSeriesLoading, setIsCardSeriesLoading] = useState(true);
   const [isCardsFromSeriesLoading, setIsCardsFromSeriesLoading] = useState(true);
-  const [isTagsLoading, setIsTagsLoading] = useState(true);
-  const [isCardPartialsLoading, setIsCardPartialsLoading] = useState(true);
   const [isCardSaving, setIsCardSaving] = useState(false);
 
-  const [activePartial, setActivePartial] = useState(null);
-  const [partialsToDelete, setPartialsToDelete] = useState([]);
+  const [activePartial, setActivePartial] = useState<number | null>(null);
+  const [partialsToDeleteIds, setPartialsToDeleteIds]
+    = useState<Array<number>>([]);
+
+  const {
+    data: cachedCardData,
+    isLoading: isCardQueryLoading,
+    isFetched: isCardQueryLoaded
+  } = useQuery({
+    ...getCardQueryOptions(authTokens.access, +id!),
+    enabled: !!id,
+  });
 
   useEffect(() => {
-    const fetchCard = async () => {
-      try {
-        const response = await api.get(
-          `api/cards/cards/${id}/`,
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        setCard(response.data);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsCardLoading(false);
+    setCard({ ...cachedCardData });
+
+    if (!cachedCardData?.id) {
+      return;
+    }
+
+    if (cachedCardSeriesData && cardsFromSeries.length === 0) {
+      if (card!.card_series) {
+        fetchCardsFromSeries(card!.card_series);
       }
-    };
+    }
 
-    fetchCard();
-  }, [id]);
+    refetchCardPartials();
+  }, [cachedCardData]);
+
+  const {
+    data: cachedCardSeriesData,
+    isLoading: isCardSeriesQueryLoading,
+    isFetched: isCardSeriesQueryLoaded
+  } = useQuery({
+    ...getCardSeriesQueryOptions(authTokens.access),
+    enabled: !!card.id,
+    select: (result) => {
+      const cardSeriesMap: Record<number, CardSeries> = {};
+      result.map((_) => (
+        cardSeriesMap[_.id] = { ..._ }
+      ));
+      return cardSeriesMap;
+    }
+  });
 
   useEffect(() => {
-    const fetchCardSeries = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/card-series/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        const cardSeriesMap = {};
-        response.data.map((_) => (
-          cardSeriesMap[_.id] = { ..._ }
+    if (card.id && cachedCardSeriesData) {
+      setCardSeries({ ...cachedCardSeriesData });
+  
+      setSeriesPickerData(
+        Object.values(cachedCardSeriesData!).map((_) => (
+          { label: _.name, value: _.id }
+        ))
+      );
+  
+      if (card && cardsFromSeries.length === 0) {
+        if (card!.card_series) {
+          fetchCardsFromSeries(card!.card_series);
+        }
+      }
+    }
+  }, [card.id, cachedCardSeriesData]);
+
+  const {
+    data: cachedTagsData,
+    isLoading: isTagsQueryLoading,
+    isFetched: isTagsQueryLoaded
+  } = useQuery({
+    ...getTagsQueryOptions(authTokens.access),
+    enabled: !!card.id,
+    select: (result) => {
+      const tagsMap: Record<number, Tag> = {};
+      result.map((_) => (
+        tagsMap[_.id] = { ..._ }
+      ));
+      return tagsMap;
+    }
+  });
+
+  useEffect(() => {
+    if (card.id && cachedTagsData) {
+      setTags({ ...cachedTagsData });
+  
+      setTagPickerData(
+        Object.values(cachedTagsData!).map((_) => (
+          { label: _.name, value: _.name }
+        ))
+      );
+  
+      if (card.id && Object.entries(cachedTagsData!).length > 0) {
+        const tagsIds = card.tags!.map((_) => (
+          cachedTagsData![_ as number].id
         ));
-        setSeriesPickerData(
-          response.data.map((_) => ({ label: _.name, value: _.id }))
-        );
-        setCardSeries(cardSeriesMap);
-        
-        if (card.card_series) {
-          fetchCardsFromSeries(card.card_series);
-        }
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsCardSeriesLoading(false);
+        const tagsNames = Object.values(cachedTagsData!)
+          .filter((_) => (
+            tagsIds.includes(_.id)
+          ))
+          .map((_) => (
+            _.name
+          ));
+        setCard({
+          ...card,
+          tags: [...tagsIds],
+          tagsNames: [...tagsNames]
+        });
       }
-    };
+    }
+  }, [card.id, cachedTagsData]);
 
-    fetchCardSeries();
-  }, [card.id]);
+  const {
+    data: cachedCardPartials,
+    refetch: refetchCardPartials,
+    isLoading: isCardPartialsQueryLoading,
+    isFetched: isCardPartialsQueryLoaded
+  } = useQuery({
+    ...getCardPartialsForCardQueryOptions(authTokens.access, card.id!),
+    enabled: !!card.id
+  });
 
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/tags/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        const tagsMap = {};
-        response.data.map((_) => (
-          tagsMap[_.id] = { ..._ }
-        ));
-        setTags(tagsMap);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsTagsLoading(false);
-      }
-    };
+    if (cachedCardPartials && cachedCardPartials.length > 0) {
+      setCardPartials([...cachedCardPartials!]);
+    }
+  }, [cachedCardPartials]);
 
-    fetchTags();
-  }, [card.id]);
+  const createNewCardSeriesMutation = useMutation({
+    mutationFn: (
+      { accessToken, seriesName }:
+      { accessToken: string; seriesName: string; }
+    ) => (
+      createNewCardSeries(accessToken, seriesName)
+    )
+  });
 
-  useEffect(() => {
-    const fetchCardPartials = async () => {
-      try {
-        const response = await api.get(
-          `api/cards/card-partials/?card=${id}`,
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        setCardPartials(response.data);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsCardPartialsLoading(false);
-      }
-    };
+  const createNewTagMutation = useMutation({
+    mutationFn: (
+      { accessToken, tagName }:
+      { accessToken: string; tagName: string; }
+    ) => (
+      createNewTag(accessToken, tagName)
+    )
+  });
 
-    fetchCardPartials();
-  }, [card.id]);
-
-  async function handleSeriesPickerChange(value) {
+  async function handleSeriesPickerChange(value: number | string) {
     if (typeof value === 'number') {
       setCard({
         ...card,
@@ -167,37 +208,28 @@ export default function Edit() {
   
       fetchCardsFromSeries(value);
     } else if (typeof value === 'string') {
-      try {
-        const response = await api.post(
-          'api/cards/card-series/',
-          { name: value },
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`,
-              'X-CSRFToken': document.cookie.replace(
-                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-              )
-            },
-            withCredentials: true
-          }
-        );
-        const cardSeriesMap = { ...cardSeries };
-        cardSeriesMap[response.data.id] = { ...response.data };
-        setCardSeries(cardSeriesMap);
-        setSeriesPickerData(
-          seriesPickerData.concat([{ label: value, value: response.data.id }])
-        );
-        setCard({
-          ...card,
-          n_in_series: 1,
-          card_series: response.data.id
-        });
-        setCardsFromSeries([card]);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
+      createNewCardSeriesMutation.mutate({
+        accessToken: authTokens.access,
+        seriesName: value
+      }, {
+        onSuccess(responseData: CardSeries) {
+          const cardSeriesMap = { ...cardSeries };
+          cardSeriesMap[responseData.id] = { ...responseData };
+          setCardSeries(cardSeriesMap);
+          setSeriesPickerData(
+            seriesPickerData.concat([{
+              label: value,
+              value: responseData.id
+            }])
+          );
+          setCard({
+            ...card,
+            n_in_series: 1,
+            card_series: responseData.id
+          });
+          setCardsFromSeries([card]);
         }
-      }
+      });
     }
   }
 
@@ -209,7 +241,7 @@ export default function Edit() {
     setCardsFromSeries([]);
   }
 
-  const fetchCardsFromSeries = async (seriesId) => {
+  const fetchCardsFromSeries = async (seriesId: number) => {
     setIsCardsFromSeriesLoading(true);
 
     try {
@@ -224,8 +256,8 @@ export default function Edit() {
       );
       if (!response.data.find((_) => _.id === card.id)) {
         const newCardsFromSeries = response.data.concat([card]).sort(
-          (a, b) => a.n_in_series - b.n_in_series
-        ).map((_, i) => (
+          (a: Card, b: Card) => a.n_in_series - b.n_in_series
+        ).map((_: Card, i: number) => (
           {
             ..._,
             n_in_series: i + 1
@@ -235,7 +267,7 @@ export default function Edit() {
       } else {
         setCardsFromSeries(response.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       if (!error.response) {
         console.error(error.message);
       }
@@ -244,81 +276,40 @@ export default function Edit() {
     }
   };
 
-  useEffect(() => {
-    setTagPickerData(
-      Object.values(tags).map((_) => ({ label: _.name, value: _.name }))
-    );
-
-    if (card.id && Object.entries(tags).length > 0) {
-      const tagsIds = card.tags.map((_) => (
-        tags[_].id
-      ));
-      const tagsNames = Object.values(tags)
-        .filter((_) => (
-          tagsIds.includes(_.id)
-        ))
-        .map((_) => (
-          _.name
-        ));
-      setCard({
-        ...card,
-        tags: [...tagsIds],
-        tagsNames: [...tagsNames]
-      });
-    }
-  }, [tags]);
-
-  function handleCreateTag(value, item, event) {
-    const createTag = async (value) => {
-      try {
-        const response = await api.post(
-          'api/cards/tags/',
-          { name: value },
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`,
-              'X-CSRFToken': document.cookie.replace(
-                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-              )
-            },
-            withCredentials: true
-          }
-        );
-
+  function handleCreateTag(item: ItemDataType) {
+    createNewTagMutation.mutate({
+      accessToken: authTokens.access,
+      tagName: item.label as string
+    }, {
+      onSuccess(responseData: Tag) {
         setCard({
           ...card,
-          tags: [...(card.tags ? card.tags : []), response.data.id],
+          tags: [...(card.tags ? card.tags : []), responseData.id],
           tagsNames: [
             ...(card.tagsNames ? card.tagsNames : []),
-            response.data.name
+            responseData.name
           ]
         });
-        const tagsMap = {};
+        const tagsMap: Record<number, Tag> = {};
         Object.values(tags).map((__) => (
           tagsMap[__.id] = { ...__ }
         ));
-        tagsMap[response.data.id] = { ...response.data };
+        tagsMap[responseData.id] = { ...responseData };
         setTags(tagsMap);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
       }
-    };
-
-    createTag(item.label);
-  }
-
-  function handleRemoveTag(value) {
-    const tagId = Object.values(tags).find((_) => _.name === value).id;
-    setCard({
-      ...card,
-      tags: [...card.tags.filter((_) => _ !== tagId)],
-      tagsNames: [...card.tagsNames.filter((_) => _ !== value)]
     });
   }
 
-  async function handlePickTags(value) {
+  function handleRemoveTag(value: string) {
+    const tagId = Object.values(tags).find((_) => _.name === value)?.id;
+    setCard({
+      ...card,
+      tags: [...card.tags!.filter((_) => _ !== tagId)],
+      tagsNames: [...card.tagsNames!.filter((_) => _ !== value)]
+    });
+  }
+
+  async function handlePickTags(value: Array<string>) {
     const newTags = Object.values(tags)
       .filter((_) => (
         value.includes(_.name)
@@ -337,7 +328,7 @@ export default function Edit() {
     });
   }
 
-  function addPartial(index, type) {
+  function addPartial(index: number, type: string) {
     cardPartials.splice(index, 0, {
       content: [{
         type,
@@ -349,7 +340,7 @@ export default function Edit() {
       }],
       card: card.id
     });
-    setCardPartials(cardPartials.map((_, i) => (
+    setCardPartials(cardPartials.map((_) => (
       { ..._ }
     )));
   }
@@ -372,7 +363,7 @@ export default function Edit() {
           withCredentials: true
         }
       );
-    } catch (error) {
+    } catch (error: any) {
       if (!error.response) {
         console.error(error.message);
       }
@@ -400,7 +391,7 @@ export default function Edit() {
               withCredentials: true
             }
           );
-        } catch (error) {
+        } catch (error: any) {
           if (!error.response) {
             console.error(error.message);
           }
@@ -428,7 +419,7 @@ export default function Edit() {
               withCredentials: true
             }
           );
-        } catch (error) {
+        } catch (error: any) {
           if (!error.response) {
             console.error(error.message);
           }
@@ -456,7 +447,7 @@ export default function Edit() {
               withCredentials: true
             }
           );
-          partialsToDelete.forEach(async (_) => {
+          partialsToDeleteIds.forEach(async (_) => {
             await api.delete(
               `api/cards/card-partials/${_}/`,
               {
@@ -470,7 +461,7 @@ export default function Edit() {
               }
             );
           });
-        } catch (error) {
+        } catch (error: any) {
           if (!error.response) {
             console.error(error.message);
           }
@@ -560,23 +551,27 @@ export default function Edit() {
   }
 
   function handlePartialDelete() {
-    const partialId = cardPartials[activePartial].id;
+    const partialId = cardPartials[activePartial!].id;
     setActivePartial(null);
     setCardPartials(cardPartials.filter((_, i) => i !== activePartial));
-    setPartialsToDelete([...partialsToDelete, partialId]);
+    setPartialsToDeleteIds([...partialsToDeleteIds, partialId]);
   }
 
   return (
     <>
       {(
-        isCardLoading
-        || isCardSeriesLoading
-        || isTagsLoading
+        isCardQueryLoading
+        || isCardSeriesQueryLoading
+        || isTagsQueryLoading
       ) && <p>Loading...</p>}
       {(
-        !isCardLoading
-        && !isCardSeriesLoading
-        && !isTagsLoading
+        !card.tagsNames
+      ) && <p className="h-[100px] bg-blue">{`${card.tagsNames}`}</p>}
+      {(
+        isCardQueryLoaded
+        && isCardSeriesQueryLoaded
+        && isTagsQueryLoaded
+        && card.tagsNames
       ) && (
         <>
           <div
@@ -642,17 +637,17 @@ export default function Edit() {
               data={tagPickerData}
               style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
               value={card.tagsNames}
-              onCreate={(value, item, event) => handleCreateTag(value, item, event)}
+              onCreate={(value, item, event) => handleCreateTag(item)}
               onSelect={handlePickTags}
               onTagRemove={handleRemoveTag}
             />
           </div>
           
           <div>
-            {isCardPartialsLoading && <p>Loading...</p>}
-            {!isCardPartialsLoading && (
+            {isCardPartialsQueryLoading && <p>Loading...</p>}
+            {isCardPartialsQueryLoaded && (
               <div className="flex flex-col border-t-2 border-black">
-                {cardPartials.map((_, partialIndex) => (
+                {cardPartials!.map((_, partialIndex) => (
                   <div
                     className="pt-2.5 pr-2.5 pl-2.5"
                     key={partialIndex}
@@ -752,20 +747,20 @@ export default function Edit() {
                   <ul className="m-2.5 mr-0 flex flex-row">
                     <li
                       className="mr-2 bg-white kn-base-btn"
-                      onClick={() => addPartial(cardPartials.length, 'text')}
+                      onClick={() => addPartial(cardPartials!.length, 'text')}
                     >
                       <IoText />
                     </li>
                     <li
                       className="mr-2 bg-white kn-base-btn"
-                      onClick={() => addPartial(cardPartials.length, 'code')}
+                      onClick={() => addPartial(cardPartials!.length, 'code')}
                     >
                       <FaCode />
                     </li>
                     <li
                       className="flex items-center w-[36px] h-[36px]
                         bg-white kn-base-btn"
-                      onClick={() => addPartial(cardPartials.length, 'vim')}
+                      onClick={() => addPartial(cardPartials!.length, 'vim')}
                     >
                       <span className="font-semibold leading-[0.1]">vi</span>
                     </li>
