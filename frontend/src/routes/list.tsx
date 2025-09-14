@@ -47,6 +47,7 @@ export default function List() {
 
   const {
     data: cards,
+    isFetching: isCardsQueryLoading,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
@@ -54,7 +55,7 @@ export default function List() {
     ...getCardsQueryOptions(authTokens.access, params)
   });
 
-  const { data: cardSeries } = useQuery({
+  const { data: cardSeries, isFetching: isCardSeriesQueryLoading } = useQuery({
     ...getCardSeriesQueryOptions(authTokens.access),
     select: (result) => {
       const cardSeriesMap: Record<number, CardSeries> = {};
@@ -73,7 +74,7 @@ export default function List() {
     }
   }, [cardSeries]);
 
-  const { data: tags } = useQuery({
+  const { data: tags, isFetching: isTagsQueryLoading } = useQuery({
     ...getTagsQueryOptions(authTokens.access),
     select: (result) => {
       const tagsMap: Record<number, Tag> = {};
@@ -108,7 +109,10 @@ export default function List() {
     }
   }, [tags]);
 
-  const { data: cardPartials } = useQuery({
+  const {
+    data: cardPartials,
+    isFetching: isCardPartialsQueryLoading
+  } = useQuery({
     ...getCardPartialsQueryOptions(authTokens.access),
     select: (result) => {
       const cardPartialsMap: Record<number, Array<CardPartial>> = {};
@@ -216,8 +220,18 @@ export default function List() {
 
   return (
     <>
-      {false && <p>Loading...</p>}
-      {true && (
+      {(
+        isCardsQueryLoading
+        || isCardSeriesQueryLoading
+        || isTagsQueryLoading
+        || isCardPartialsQueryLoading
+      ) && <p>Loading...</p>}
+      {(
+        !isCardsQueryLoading
+        && !isCardSeriesQueryLoading
+        && !isTagsQueryLoading
+        && !isCardPartialsQueryLoading
+      ) && (
         <>
           <div
             className="mt-2"
