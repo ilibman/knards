@@ -565,9 +565,6 @@ export default function Edit() {
         || isTagsQueryLoading
       ) && <p>Loading...</p>}
       {(
-        !card.tagsNames
-      ) && <p className="h-[100px] bg-blue">{`${card.tagsNames}`}</p>}
-      {(
         isCardQueryLoaded
         && isCardSeriesQueryLoaded
         && isTagsQueryLoaded
