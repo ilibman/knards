@@ -246,7 +246,7 @@ export default function Edit() {
 
     try {
       const response = await api.get(
-        `api/cards/cards/?series=${seriesId}`,
+        `api/cards/cards/get_cards_from_series/?series=${seriesId}`,
         {
           headers: {
             Authorization: `JWT ${authTokens.access}`

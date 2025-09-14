@@ -139,6 +139,16 @@ class CardsViewSet(viewsets.ModelViewSet):
             'cards_total_by_tags': cards_total_by_tags
         })
 
+    @action(detail=False, methods=['GET'])
+    def get_cards_from_series(self, request):
+        cardset = get_cardset_by_query_params(
+            request.query_params,
+            request.user
+        )
+
+        serializer = CardSerializer(cardset, many=True)
+        return Response(serializer.data)
+
 class CardPartialsViewSet(viewsets.ModelViewSet):
     serializer_class = CardPartialSerializer
     lookup_field = 'pk'
