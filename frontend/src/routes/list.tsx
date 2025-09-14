@@ -36,7 +36,6 @@ export default function List() {
     fulltext?: string;
   }>({});
   const [preselectedTags, setPreselectedTags] = useState<Array<number>>([]);
-  const [preselectedTagsReady, setPreselectedTagsReady] = useState(false);
 
   const [seriesPickerData, setSeriesPickerData]
     = useState<Array<{ label: string; value: string; }>>([]);
@@ -86,7 +85,6 @@ export default function List() {
   });
 
   useEffect(() => {
-    // TODO: remove if when we're sure tags can't be empty
     if (tags) {
       setTagPickerData(
         Object.values(tags).map((_) => ({ label: _.name, value: _.name }))
@@ -104,7 +102,6 @@ export default function List() {
             ? preselectedTagsIds.map((_: number) => tags[_]?.name)
             : [tags[preselectedTagsIds]?.name]
         );
-        setPreselectedTagsReady(true);
       }
     }
   }, [tags]);
@@ -131,7 +128,6 @@ export default function List() {
   });
 
   function handleSeriesPickerChange(value: string | null) {
-    // TODO: remove this when we're sure cardSeries can't be empty
     if (!cardSeries) {
       return false;
     }
@@ -151,7 +147,6 @@ export default function List() {
   }
 
   function handleTagSelect(value: Array<string>) {
-    // TODO: remove this when we're sure tags can't be empty
     if (!tags) {
       return false;
     }
@@ -166,7 +161,6 @@ export default function List() {
   }
 
   function handleTagRemove(value: string) {
-    // TODO: remove this when we're sure tags can't be empty
     if (!tags) {
       return false;
     }
@@ -246,7 +240,7 @@ export default function List() {
               onChange={handleSeriesPickerChange}
             />
           </div>
-          {preselectedTagsReady && <div id="tag-picker">
+          <div id="tag-picker">
             <label
               className="mx-3 text-white font-base font-semibold text-lg"
             >Tags:</label>
@@ -268,7 +262,7 @@ export default function List() {
               <Radio className="text-lg" checked value="or">OR</Radio>
               <Radio className="text-lg" value="and">AND</Radio>
             </RadioGroup>
-          </div>}
+          </div>
           {false && (
             <div id="fulltext-search">
               <label
