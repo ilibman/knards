@@ -189,6 +189,9 @@ class CardScoresViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    def perform_update(self, serializer):
+        serializer.save(owner=self.request.user)
+
 def get_cardset_by_query_params(query_params, owner):
     series = query_params.get('series', None)
     tags = query_params.get('tags', None)
