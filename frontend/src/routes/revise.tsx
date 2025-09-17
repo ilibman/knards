@@ -4,7 +4,8 @@ import useAuth from '../context/AuthProvider';
 import api from '../api';
 import { getNewScore } from '../utils';
 import {
-  CardForRevision
+  CardForRevision,
+  CardPartial
 } from '../models';
 import RevisePartialEditor
   from '../components/partial-editor/RevisePartialEditor';
@@ -21,211 +22,177 @@ export default function Revise() {
       ? JSON.parse(localStorage.getItem('cardset'))
       : null
   ));
-  const [revisedCardIndex, setRevisedCardIndex] = useState(0);
   const [activePartial, setActivePartial] = useState([null, null]);
-  const [cardPartials, setCardPartials] = useState({});
-  const [reviseCardPartials, setReviseCardPartials] = useState({});
+  const [cardPartials, setCardPartials] = useState<Array<CardPartial>>([]);
+  const [reviseCardPartials, setReviseCardPartials]
+    = useState<Array<CardPartial>>([]);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isFirstCardPartialsLoading, setIsFirstCardPartialsLoading] = useState(true);
-  const [isRestCardPartialsLoading, setIsRestCardPartialsLoading] = useState(false);
-
+  const [isCardSaving, setIsCardSaving] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [arePartialsHidden, setArePartialsHidden] = useState(false);
 
+  async function fetchCardPartials(cardId: number) {
+    setIsLoading(true);
+
+    try {
+      const response = await api.get(
+        `api/cards/card-partials/?card=${cardId}`,
+        {
+          headers: {
+            Authorization: `JWT ${authTokens.access}`
+          },
+          withCredentials: true
+        }
+      );
+      setCardPartials([...response.data]);
+      setReviseCardPartials([
+        ...response.data.map((_) => (
+          {
+            ..._,
+            content: _.is_prompt
+              ? _.prompt_initial_content
+              : _.content.map((__) => (
+                {
+                  ...__,
+                  children: __.children.map((___) => {
+                    if (___.insetQuestion) {
+                      return {
+                        ...___,
+                        text: ''
+                      };
+                    } else {
+                      return {
+                        ...___
+                      };
+                    }
+                  })
+                }
+              ))
+          }
+        ))
+      ]);
+    } catch (error: any) {
+      if (!error.response) {
+        console.error(error.message);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRevising(true);
+    }
+  }
+
   useEffect(() => {
-    if (cardset.filter((_) => !_.revised).length === 0) {
+    if (cardset.length === 0) {
       navigate('/list');
     }
 
-    setIsLoading(false);
-
-    const fetchFirstCardPartials = async () => {
-      try {
-        const response = await api.get(
-          `api/cards/card-partials/?card=${cardset[revisedCardIndex].id}`,
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        setCardPartials({
-          [revisedCardIndex]: [...response.data],
-        });
-        setReviseCardPartials({
-          [revisedCardIndex]: [...response.data.map((_) => (
-            {
-              ..._,
-              content: _.is_prompt
-                ? _.prompt_initial_content
-                : _.content.map((__) => (
-                  {
-                    ...__,
-                    children: __.children.map((___) => {
-                      if (___.insetQuestion) {
-                        return {
-                          ...___,
-                          text: ''
-                        };
-                      } else {
-                        return {
-                          ...___
-                        };
-                      }
-                    })
-                  }
-                ))
-            }
-          ))]
-        });
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsRevising(true);
-        setIsFirstCardPartialsLoading(false);
-        setIsRestCardPartialsLoading(true);
-      }
-    };
-
-    fetchFirstCardPartials();
+    fetchCardPartials(cardset[0].id);
   }, [cardset]);
-
-  useEffect(() => {
-    const fetchRestCardPartials = async () => {
-      cardset.slice(1).forEach(async (_, i) => {
-        try {
-          const response = await api.get(
-            `api/cards/card-partials/?card=${_.id}`,
-            {
-              headers: {
-                Authorization: `JWT ${authTokens.access}`
-              },
-              withCredentials: true
-            }
-          );
-          setCardPartials((prevState) => {
-            return {
-              ...prevState,
-              [i + 1]: [...response.data]
-            }
-          });
-          setReviseCardPartials((prevState) => {
-            return {
-              ...prevState,
-              [i + 1]: [...response.data.map((_) => (
-                {
-                  ..._,
-                  content: _.is_prompt
-                    ? _.prompt_initial_content
-                    : _.content.map((__) => (
-                      {
-                        ...__,
-                        children: __.children.map((___) => {
-                          if (___.insetQuestion) {
-                            return {
-                              ...___,
-                              text: ''
-                            };
-                          } else {
-                            return {
-                              ...___
-                            };
-                          }
-                        })
-                      }
-                    ))
-                }
-              ))]
-            }
-          });
-        } catch (error: any) {
-          if (!error.response) {
-            console.error(error.message);
-          }
-        } finally {
-          setIsRestCardPartialsLoading(false);
-        }
-      });
-    };
-
-    fetchRestCardPartials();
-  }, [isRestCardPartialsLoading]);
 
   function handleCheckAnswers() {
     setIsRevising(false);
     setIsEvaluating(true);
   }
 
-  function handleEvaluationClick(newScore) {
-    const newCardset = cardset.map((_, i) => {
-      if (i === revisedCardIndex) {
-        return {
-          ..._,
-          score: newScore,
-          revised: true
-        }
+  async function handleEvaluationClick(newScore: number) {
+    setIsCardSaving(true);
+    setCardPartials([]);
+    setReviseCardPartials([]);
+
+    try {
+      if (cardset[0].score_id) {
+        await api.patch(
+          `api/cards/card-scores/${cardset[0].score_id}/`,
+          { score: newScore },
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`,
+              'X-CSRFToken': document.cookie.replace(
+                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+              )
+            },
+            withCredentials: true
+          }
+        );
       } else {
-        return {
-          ..._
-        }
+        await api.post(
+          'api/cards/card-scores/',
+          {
+            card: cardset[0].id,
+            score: newScore
+          },
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`,
+              'X-CSRFToken': document.cookie.replace(
+                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+              )
+            },
+            withCredentials: true
+          }
+        );
       }
-    });
+    } catch (error: any) {
+      if (!error.response) {
+        console.error(error.message);
+      }
+    } finally {
+      const newCardset = cardset.slice(1);
+      setCardset(newCardset);
+      localStorage.setItem('cardset', JSON.stringify(newCardset));
 
-    setCardset(newCardset);
-    localStorage.setItem('cardset', JSON.stringify(newCardset));
+      setIsCardSaving(false);
 
-    if (newCardset.filter((_) => !_.revised).length > 0) {
-      setRevisedCardIndex((prevState) => prevState + 1);
-      setIsRevising(true);
-      setIsEvaluating(false);
-      setArePartialsHidden(true);
-      setTimeout(() => {
-        setArePartialsHidden(false);
-      });
-    } else {
-      navigate('/list');
+      if (newCardset.length > 0) {
+        setIsRevising(true);
+        setIsEvaluating(false);
+        setArePartialsHidden(true);
+        setTimeout(() => {
+          setArePartialsHidden(false);
+        });
+      } else {
+        navigate('/list');
+      }
     }
   }
 
   return (
     <>
       {isLoading && <p>Loading...</p>}
-      {!isLoading && (
+      {isCardSaving && <p>Saving...</p>}
+      {!isLoading && !isCardSaving && (
         <div className="p-3 flex border-b-2 revision">
           <div className="w-1/2 metadata-container">
-            {cardset[revisedCardIndex].title && (
+            {cardset[0].title && (
               <p className="text-white text-lg font-base font-semibold">
-                Title: {cardset[revisedCardIndex].title}
+                Title: {cardset[0].title}
               </p>
             )}
-            {cardset[revisedCardIndex].series_name && (
+            {cardset[0].series_name && (
               <p className="text-white text-lg font-base font-semibold">
-                Series: {cardset[revisedCardIndex].series_name}
+                Series: {cardset[0].series_name}
               </p>
             )}
-            {cardset[revisedCardIndex].tags_names && (
+            {cardset[0].tags_names && (
               <p className="text-white text-lg font-base font-semibold">
-                Tags: {cardset[revisedCardIndex].tags_names.join(', ')}
+                Tags: {cardset[0].tags_names.join(', ')}
               </p>
             )}
-            {cardset[revisedCardIndex].created_at && (
+            {cardset[0].created_at && (
               <p className="text-white text-lg font-base font-semibold">
                 Created: {new Date(
-                  cardset[revisedCardIndex].created_at
+                  cardset[0].created_at
                 ).toLocaleString(
                   'en-UK',
                   { day: 'numeric', month: 'numeric', year: 'numeric' }
                 )}
               </p>
             )}
-            {cardset[revisedCardIndex].owner_name && (
+            {cardset[0].owner_name && (
               <p className="text-white text-lg font-base font-semibold">
-                Created by: {cardset[revisedCardIndex].owner_name}
+                Created by: {cardset[0].owner_name}
               </p>
             )}
           </div>
@@ -254,19 +221,19 @@ export default function Revise() {
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px] min-[1440px]:mb-2.5"
                   onClick={() => handleEvaluationClick(
-                    getNewScore(cardset[revisedCardIndex].score).upScore
+                    getNewScore(cardset[0].score).upScore
                   )}
                 >
                   <span className="hidden min-[1440px]:inline">
                     I knew this very well (score +{
-                      getNewScore(cardset[revisedCardIndex].score).upScore
-                        - cardset[revisedCardIndex].score
-                    } ({getNewScore(cardset[revisedCardIndex].score).upScore}))
+                      getNewScore(cardset[0].score).upScore
+                        - cardset[0].score
+                    } ({getNewScore(cardset[0].score).upScore}))
                   </span>
                   <span className="min-[1440px]:hidden">
-                    +{getNewScore(cardset[revisedCardIndex].score).upScore
-                      - cardset[revisedCardIndex].score}
-                    &nbsp;({getNewScore(cardset[revisedCardIndex].score).upScore})
+                    +{getNewScore(cardset[0].score).upScore
+                      - cardset[0].score}
+                    &nbsp;({getNewScore(cardset[0].score).upScore})
                   </span>
                 </div>
                 <div
@@ -274,19 +241,19 @@ export default function Revise() {
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px] min-[1440px]:mb-2.5"
                   onClick={() => handleEvaluationClick(
-                    getNewScore(cardset[revisedCardIndex].score).downScore
+                    getNewScore(cardset[0].score).downScore
                   )}
                 >
                   <span className="hidden min-[1440px]:inline">
                     I've made some minor mistakes (score {
-                      getNewScore(cardset[revisedCardIndex].score).downScore
-                        - cardset[revisedCardIndex].score
-                    } ({getNewScore(cardset[revisedCardIndex].score).downScore}))
+                      getNewScore(cardset[0].score).downScore
+                        - cardset[0].score
+                    } ({getNewScore(cardset[0].score).downScore}))
                   </span>
                   <span className="min-[1440px]:hidden">
-                    {getNewScore(cardset[revisedCardIndex].score).downScore
-                      - cardset[revisedCardIndex].score}
-                    &nbsp;({getNewScore(cardset[revisedCardIndex].score).downScore})
+                    {getNewScore(cardset[0].score).downScore
+                      - cardset[0].score}
+                    &nbsp;({getNewScore(cardset[0].score).downScore})
                   </span>
                 </div>
                 <div
@@ -294,19 +261,19 @@ export default function Revise() {
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px] min-[1440px]:mb-2.5"
                   onClick={() => handleEvaluationClick(
-                    getNewScore(cardset[revisedCardIndex].score).downToOneThirdScore
+                    getNewScore(cardset[0].score).downToOneThirdScore
                   )}
                 >
                   <span className="hidden min-[1440px]:inline">
                     I've made some major mistakes (score {
-                      getNewScore(cardset[revisedCardIndex].score).downToOneThirdScore
-                        - cardset[revisedCardIndex].score
-                    } ({getNewScore(cardset[revisedCardIndex].score).downToOneThirdScore}))
+                      getNewScore(cardset[0].score).downToOneThirdScore
+                        - cardset[0].score
+                    } ({getNewScore(cardset[0].score).downToOneThirdScore}))
                   </span>
                   <span className="min-[1440px]:hidden">
-                    {getNewScore(cardset[revisedCardIndex].score).downToOneThirdScore
-                      - cardset[revisedCardIndex].score}
-                    &nbsp;({getNewScore(cardset[revisedCardIndex].score).downToOneThirdScore})
+                    {getNewScore(cardset[0].score).downToOneThirdScore
+                      - cardset[0].score}
+                    &nbsp;({getNewScore(cardset[0].score).downToOneThirdScore})
                   </span>
                 </div>
                 <div
@@ -314,19 +281,19 @@ export default function Revise() {
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px]"
                   onClick={() => handleEvaluationClick(
-                    getNewScore(cardset[revisedCardIndex].score).downToZeroScore
+                    getNewScore(cardset[0].score).downToZeroScore
                   )}
                 >
                   <span className="hidden min-[1440px]:inline">
                     I don't know this at all (score {
-                      getNewScore(cardset[revisedCardIndex].score).downToZeroScore
-                        - cardset[revisedCardIndex].score
-                    } ({getNewScore(cardset[revisedCardIndex].score).downToZeroScore}))
+                      getNewScore(cardset[0].score).downToZeroScore
+                        - cardset[0].score
+                    } ({getNewScore(cardset[0].score).downToZeroScore}))
                   </span>
                   <span className="min-[1440px]:hidden">
-                    {getNewScore(cardset[revisedCardIndex].score).downToZeroScore
-                      - cardset[revisedCardIndex].score}
-                    &nbsp;({getNewScore(cardset[revisedCardIndex].score).downToZeroScore})
+                    {getNewScore(cardset[0].score).downToZeroScore
+                      - cardset[0].score}
+                    &nbsp;({getNewScore(cardset[0].score).downToZeroScore})
                   </span>
                 </div>
               </>
@@ -335,23 +302,19 @@ export default function Revise() {
         </div>
       )}
       {(
-        isFirstCardPartialsLoading
-          || arePartialsHidden
-          || !reviseCardPartials[revisedCardIndex]
-      ) && <p>Loading...</p>}
+        arePartialsHidden || !reviseCardPartials
+      ) && <p>Something happening...</p>}
       {(
-        !isFirstCardPartialsLoading
-          && !arePartialsHidden
-          && reviseCardPartials[revisedCardIndex]
+        !arePartialsHidden && reviseCardPartials
       ) && (
         <div className="flex flex-col w-full pb-[122px] p-3">
-          {reviseCardPartials[revisedCardIndex].map((_, i) => (
+          {reviseCardPartials.map((_, i) => (
             <div className="flex flex-col mb-3 min-[1440px]:flex-row" key={i}>
               <div
                 className={`${isEvaluating && (
-                  cardPartials[revisedCardIndex][i].content.some(
+                  cardPartials[i].content.some(
                     (_) => _.children.some((__) => __.insetQuestion)
-                  ) || cardPartials[revisedCardIndex][i].is_prompt
+                  ) || cardPartials[i].is_prompt
                 )
                   ? 'mr-3 w-full min-[1440px]:w-1/2'
                   : 'w-full'}`}
@@ -377,14 +340,14 @@ export default function Revise() {
                 )}
               </div>
               {isEvaluating && (
-                cardPartials[revisedCardIndex][i].content.some(
+                cardPartials[i].content.some(
                   (_) => _.children.some((__) => __.insetQuestion)
-                ) || cardPartials[revisedCardIndex][i].is_prompt
+                ) || cardPartials[i].is_prompt
               ) && (
                 <div className="w-full mt-3 min-[1440px]:w-1/2 min-[1440px]:mt-0">
                   {_.content[0].type !== 'vim' && (
                     <RevisePartialEditor
-                      content={cardPartials[revisedCardIndex][i].content}
+                      content={cardPartials[i].content}
                       isActivePartial={
                         i === activePartial[0] && activePartial[1] === 1
                       }
@@ -394,7 +357,7 @@ export default function Revise() {
                   )}
                   {_.content[0].type === 'vim' && (
                     <PartialEditorWithVim
-                      content={cardPartials[revisedCardIndex][i].content}
+                      content={cardPartials[i].content}
                       isActivePartial={
                         i === activePartial[0] && activePartial[1] === 1
                       }
