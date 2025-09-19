@@ -114,23 +114,26 @@ class CardsViewSet(viewsets.ModelViewSet):
             days_passed = (
                 datetime.datetime.now(tz=pytz.UTC) - last_revision_date
             ).days
-            
-            modified_card['weight'] = int(
-                1000 * math.exp(-0.6 * card_score)
-                    + 18 * math.pow(days_passed, 0.7)
-            )
-            modified_cardset.append(modified_card)
+
+            eligible_for_revision = card_score < days_passed and days_passed > 0
+
+            if eligible_for_revision:
+                modified_card['weight'] = int(
+                    1000 * math.exp(-0.6 * card_score)
+                        + 18 * math.pow(days_passed, 0.7)
+                )
+                modified_cardset.append(modified_card)
 
             if card.tags_set_str not in cards_total_by_tags:
                 cards_total_by_tags[card.tags_set_str] = {}
                 cards_total_by_tags[card.tags_set_str]['total'] = 1
                 cards_total_by_tags[card.tags_set_str]['to_revise'] = (
-                    1 if card_score <= days_passed or days_passed == 0 else 0
+                    1 if eligible_for_revision else 0
                 )
             else:
                 cards_total_by_tags[card.tags_set_str]['total'] += 1
                 cards_total_by_tags[card.tags_set_str]['to_revise'] += (
-                    1 if card_score <= days_passed or days_passed == 0 else 0
+                    1 if eligible_for_revision else 0
                 )
 
         return Response({
@@ -187,9 +190,6 @@ class CardScoresViewSet(viewsets.ModelViewSet):
         return queryset.order_by('pk')
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-
-    def perform_update(self, serializer):
         serializer.save(owner=self.request.user)
 
 def get_cardset_by_query_params(query_params, owner):
