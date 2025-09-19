@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaEdit } from 'react-icons/fa';
+
 import useAuth from '../context/AuthProvider';
 import api from '../api';
 import { getNewScore } from '../utils';
@@ -163,7 +165,7 @@ export default function Revise() {
       {isLoading && <p>Loading...</p>}
       {isCardSaving && <p>Saving...</p>}
       {!isLoading && !isCardSaving && (
-        <div className="p-3 flex border-b-2 revision">
+        <div className="p-2.5 flex border-b-2 revision">
           <div className="w-1/2 metadata-container">
             {cardset[0].title && (
               <p className="text-white text-lg font-base font-semibold">
@@ -307,16 +309,16 @@ export default function Revise() {
       {(
         !arePartialsHidden && reviseCardPartials
       ) && (
-        <div className="flex flex-col w-full pb-[122px] p-3">
+        <div className="flex flex-col w-full pb-[122px] p-2.5">
           {reviseCardPartials.map((_, i) => (
-            <div className="flex flex-col mb-3 min-[1440px]:flex-row" key={i}>
+            <div className="flex flex-col mb-2.5 min-[1440px]:flex-row" key={i}>
               <div
                 className={`${isEvaluating && (
                   cardPartials[i].content.some(
                     (_) => _.children.some((__) => __.insetQuestion)
                   ) || cardPartials[i].is_prompt
                 )
-                  ? 'mr-3 w-full min-[1440px]:w-1/2'
+                  ? 'mr-2.5 w-full min-[1440px]:w-1/2'
                   : 'w-full'}`}
               >
                 {_.content[0].type !== 'vim' && (
@@ -370,6 +372,13 @@ export default function Revise() {
               )}
             </div>
           ))}
+          <div
+            className="w-[124px] h-[72px] bg-green kn-base-btn"
+            onClick={() => navigate(`/edit/${cardset[0].id}`)}
+          >
+            <FaEdit className="h-[28px] w-[28px] fill-white
+              translate-x-1 translate-y-[-1px]" />
+          </div>
         </div>
       )}
     </>
