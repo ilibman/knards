@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth import get_user_model
 
 
@@ -91,6 +92,13 @@ class Card(models.Model):
 
     class Meta:
         ordering = ['pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['card_series', 'n_in_series'],
+                name='unique_if_card_series_set',
+                condition=~Q(card_series=None)
+            )
+        ]
 
 
 class CardPartial(models.Model):
