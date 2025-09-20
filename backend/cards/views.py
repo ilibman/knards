@@ -1,4 +1,5 @@
-import datetime, pytz, math
+import datetime, pytz, math, random
+from collections import defaultdict
 from django.db.models import Q
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
@@ -83,6 +84,7 @@ class CardsViewSet(viewsets.ModelViewSet):
 
         modified_cardset = []
         cards_total_by_tags = {}
+        series_total_cards_count = {}
         for card in cardset:
             modified_card = {
                 'id': card.pk,
@@ -95,12 +97,20 @@ class CardsViewSet(viewsets.ModelViewSet):
                 'created_at': int(card.created_at.timestamp() * 1000),
                 'owner_id': card.owner.id,
                 'owner_name': card.owner.username,
-                'revised': False,
             }
+            if card.card_series:
+                series_name = card.card_series.name
+                if series_name in series_total_cards_count:
+                    series_total_cards_count[series_name] += 1
+                else:
+                    series_total_cards_count[series_name] = 1
             
             card_score = 0
             try:
-                card_score_obj = CardScore.objects.get(card=card.id, owner=request.user)
+                card_score_obj = CardScore.objects.get(
+                    card=card.id,
+                    owner=request.user
+                )
                 last_revision_date = card_score_obj.last_revised_at
                 card_score = card_score_obj.score
 
@@ -136,8 +146,15 @@ class CardsViewSet(viewsets.ModelViewSet):
                     1 if eligible_for_revision else 0
                 )
 
+        for card in modified_cardset:
+            if card['series_id']:
+                card['total_cards_in_series']\
+                    = series_total_cards_count[card['series_name']]
+
         return Response({
-            'cardset': modified_cardset,
+            'cardset': cardset_randomize_and_group_by_weights_and_series(
+                modified_cardset
+            ),
             'cards_total': cardset.count(),
             'cards_total_by_tags': cards_total_by_tags
         })
@@ -218,3 +235,53 @@ def get_cardset_by_query_params(query_params, owner):
                     cardset &= cardset.filter(tags=tag)
     
     return cardset.distinct()
+
+def cardset_randomize_and_group_by_weights_and_series(cardset):
+    # group by weight
+    weight_groups = defaultdict(list)
+    for card in cardset:
+        weight_groups[card['weight']].append(card)
+
+    # sort weights descending
+    sorted_weights = sorted(weight_groups.keys(), reverse=True)
+
+    # index by series_id for quick access
+    series_map = defaultdict(list)
+    for card in cardset:
+        if card['series_id'] is not None:
+            series_map[card['series_id']].append(card)
+
+    parsed_series = set()
+    result = []
+
+    for weight in sorted_weights:
+        wgroup = weight_groups[weight]
+        random.shuffle(wgroup)
+
+        i = 0
+        while i < len(wgroup):
+            card = wgroup[i]
+            if card['series_id'] is not None:
+                series_id = card['series_id']
+                if series_id not in parsed_series:
+                    # insert full series group here
+                    full_group = series_map[series_id]
+                    result.extend(full_group)
+                    parsed_series.add(series_id)
+
+                    # remove series from current and future groups
+                    for w in sorted_weights:
+                        weight_groups[w] = [
+                            o for o in weight_groups[w] \
+                                if o['series_id'] != series_id
+                        ]
+                    # restart loop with current weight group (it has changed)
+                    wgroup = weight_groups[weight]
+                    random.shuffle(wgroup)
+                    i = 0
+                    continue
+            else:
+                result.append(card)
+            i += 1
+
+    return result

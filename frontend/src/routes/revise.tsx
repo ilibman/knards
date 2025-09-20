@@ -174,7 +174,9 @@ export default function Revise() {
             )}
             {cardset[0].series_name && (
               <p className="text-white text-lg font-base font-semibold">
-                Series: {cardset[0].series_name}
+                Series: {cardset[0].series_name} (
+                  {cardset[0].n_in_series}/{cardset[0].total_cards_in_series}
+                )
               </p>
             )}
             {cardset[0].tags_names && (

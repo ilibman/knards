@@ -76,19 +76,8 @@ const ListStatsAndRevise = (
   }, [queryParams]);
 
   function runRevise() {
-    const shuffleArray = (array: Array<any>) => {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    };
-
-    const filteredCardset = cardset.filter((_) => !_.revised);
-    if (!isCardsetAndStatisticsLoading && filteredCardset.length > 0) {
-      shuffleArray(filteredCardset);
-      filteredCardset.sort((a, b) => b.weight - a.weight);
-
-      localStorage.setItem('cardset', JSON.stringify(filteredCardset));
+    if (!isCardsetAndStatisticsLoading && cardset.length > 0) {
+      localStorage.setItem('cardset', JSON.stringify(cardset));
       navigate('/revise');
     }
   }
