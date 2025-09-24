@@ -22,7 +22,6 @@ class CardSeriesViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly
     ]
-    queryset = CardSeries.objects.order_by('pk')
     lookup_field = 'pk'
 
     def get_queryset(self):
@@ -33,7 +32,7 @@ class CardSeriesViewSet(viewsets.ModelViewSet):
             card = Card.objects.get(pk=card_id)
             queryset = queryset.filter(pk=card.card_series.id)
             
-        return queryset
+        return queryset.order_by('name')
 
     def perform_create(self, serializer):
         # clean up unused series
@@ -168,6 +167,27 @@ class CardsViewSet(viewsets.ModelViewSet):
 
         serializer = CardSerializer(cardset, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['POST'])
+    def reorder_cards_in_series(self, request):
+        cards_from_db = list()
+
+        for index, card in enumerate(
+            sorted(request.data['cards_from_series'],
+            key=lambda x: int(x['n_in_series']))
+        ):
+            card_from_db = Card.objects.get(pk=int(card['id']))
+            card_from_db.n_in_series = -(index + 1)
+            card_from_db.save()
+            cards_from_db.append(card_from_db)
+
+        for card in cards_from_db:
+            card.n_in_series = -(card.n_in_series)
+            card.save()
+
+        return Response({
+            'result': 'ok'
+        })
 
 class CardPartialsViewSet(viewsets.ModelViewSet):
     serializer_class = CardPartialSerializer

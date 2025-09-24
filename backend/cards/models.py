@@ -43,7 +43,7 @@ class Card(models.Model):
         blank=True,
         null=True
     )
-    n_in_series = models.PositiveIntegerField(
+    n_in_series = models.IntegerField(
         default=1,
         blank=False,
         null=False
