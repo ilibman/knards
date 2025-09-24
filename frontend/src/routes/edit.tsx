@@ -4,7 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Input,
   InputGroup,
-  InputPicker,
   TagPicker,
 } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/MultiCascadeTree';
@@ -18,7 +17,6 @@ import {
   getCardSeriesQueryOptions,
   getTagsQueryOptions,
   getCardPartialsForCardQueryOptions,
-  createNewCardSeries,
   createNewTag
 } from '../query-client';
 import {
@@ -32,6 +30,7 @@ import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
 import DialogReorderCardsInSeries
   from '../components/dialogs/DialogReorderCardsInSeries';
+import DialogEditSeries from '../components/dialogs/DialogEditSeries';
 
 export default function Edit() {
   const { authTokens } = useAuth();
@@ -39,14 +38,13 @@ export default function Edit() {
   const { id } = useParams();
   
   const [card, setCard] = useState<Partial<Card>>({});
-  const [cardSeries, setCardSeries] = useState<Record<number, CardSeries>>({});
+  const [selectedCardSeries, setSelectedCardSeries]
+    = useState<CardSeries | null>(null);
   const [tags, setTags] = useState<Record<number, Tag>>({});
   const [cardPartials, setCardPartials]
     = useState<Array<CardPartial>>([]);
   const [cardsFromSeries, setCardsFromSeries] = useState<Array<Card>>([]);
 
-  const [seriesPickerData, setSeriesPickerData]
-    = useState<Array<{ label: string; value: number; }>>([]);
   const [tagPickerData, setTagPickerData]
     = useState<Array<{ label: string; value: string; }>>([]);
 
@@ -88,28 +86,19 @@ export default function Edit() {
   const {
     data: cachedCardSeriesData,
     isLoading: isCardSeriesQueryLoading,
-    isFetched: isCardSeriesQueryLoaded
+    refetch: refetchCardSeries
   } = useQuery({
     ...getCardSeriesQueryOptions(authTokens.access),
-    enabled: !!card.id,
-    select: (result) => {
-      const cardSeriesMap: Record<number, CardSeries> = {};
-      result.map((_) => (
-        cardSeriesMap[_.id] = { ..._ }
-      ));
-      return cardSeriesMap;
-    }
+    enabled: !!card.id
   });
 
   useEffect(() => {
     if (card.id && cachedCardSeriesData) {
-      setCardSeries({ ...cachedCardSeriesData });
-  
-      setSeriesPickerData(
-        Object.values(cachedCardSeriesData!).map((_) => (
-          { label: _.name, value: _.id }
-        ))
-      );
+      const cardSeriesMap: Record<number, CardSeries> = {};
+      cachedCardSeriesData.map((_) => (
+        cardSeriesMap[_.id] = { ..._ }
+      ));
+      setSelectedCardSeries(cardSeriesMap[card.card_series]);
   
       if (card && cardsFromSeries.length === 0) {
         if (card!.card_series) {
@@ -181,15 +170,6 @@ export default function Edit() {
     }
   }, [cachedCardPartials]);
 
-  const createNewCardSeriesMutation = useMutation({
-    mutationFn: (
-      { accessToken, seriesName }:
-      { accessToken: string; seriesName: string; }
-    ) => (
-      createNewCardSeries(accessToken, seriesName)
-    )
-  });
-
   const createNewTagMutation = useMutation({
     mutationFn: (
       { accessToken, tagName }:
@@ -199,47 +179,23 @@ export default function Edit() {
     )
   });
 
-  async function handleSeriesPickerChange(value: number | string) {
-    if (typeof value === 'number') {
+  useEffect(() => {
+    if (selectedCardSeries) {
       setCard({
         ...card,
-        card_series: value
+        card_series: selectedCardSeries?.id
       });
   
-      fetchCardsFromSeries(value);
-    } else if (typeof value === 'string') {
-      createNewCardSeriesMutation.mutate({
-        accessToken: authTokens.access,
-        seriesName: value
-      }, {
-        onSuccess(responseData: CardSeries) {
-          const cardSeriesMap = { ...cardSeries };
-          cardSeriesMap[responseData.id] = { ...responseData };
-          setCardSeries(cardSeriesMap);
-          setSeriesPickerData(
-            seriesPickerData.concat([{
-              label: value,
-              value: responseData.id
-            }])
-          );
-          setCard({
-            ...card,
-            n_in_series: 1,
-            card_series: responseData.id
-          });
-          setCardsFromSeries([card]);
-        }
+      fetchCardsFromSeries(selectedCardSeries!.id);
+    } else {
+      setCard({
+        ...card,
+        card_series: null
       });
-    }
-  }
 
-  function handleClearSeries() {
-    setCard({
-      ...card,
-      card_series: null
-    });
-    setCardsFromSeries([]);
-  }
+      setCardsFromSeries([]);
+    }
+  }, [selectedCardSeries]);
 
   const fetchCardsFromSeries = async (seriesId: number) => {
     setIsCardsFromSeriesLoading(true);
@@ -255,15 +211,14 @@ export default function Edit() {
         }
       );
       if (!response.data.find((_) => _.id === card.id)) {
-        const newCardsFromSeries = response.data.concat([card]).sort(
-          (a: Card, b: Card) => a.n_in_series - b.n_in_series
-        ).map((_: Card, i: number) => (
-          {
-            ..._,
-            n_in_series: i + 1
-          }
-        ));
+        const updatedCard = {
+          ...card,
+          card_series: seriesId,
+          n_in_series: response.data.length + 1
+        }
+        const newCardsFromSeries = response.data.concat([updatedCard]);
         setCardsFromSeries(newCardsFromSeries);
+        setCard(updatedCard);
       } else {
         setCardsFromSeries(response.data);
       }
@@ -275,6 +230,15 @@ export default function Edit() {
       setIsCardsFromSeriesLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!selectedCardSeries) {
+      setCard({
+        ...card,
+        n_in_series: 1
+      });
+    }
+  }, [cardsFromSeries]);
 
   function handleCreateTag(item: ItemDataType) {
     createNewTagMutation.mutate({
@@ -375,28 +339,26 @@ export default function Edit() {
     }
 
     if (isCardInSeriesOrderChanged) {
-      cardsFromSeries.forEach(async (_) => {
-        // save card order in series
-        try {
-          await api.patch(
-            `api/cards/cards/${_.id}/`,
-            { n_in_series: _.n_in_series },
-            {
-              headers: {
-                Authorization: `JWT ${authTokens.access}`,
-                'X-CSRFToken': document.cookie.replace(
-                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-                )
-              },
-              withCredentials: true
-            }
-          );
-        } catch (error: any) {
-          if (!error.response) {
-            console.error(error.message);
+      // save card order in series
+      try {
+        await api.post(
+          `api/cards/cards/reorder_cards_in_series/`,
+          { cards_from_series: cardsFromSeries },
+          {
+            headers: {
+              Authorization: `JWT ${authTokens.access}`,
+              'X-CSRFToken': document.cookie.replace(
+                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+              )
+            },
+            withCredentials: true
           }
+        );
+      } catch (error: any) {
+        if (!error.response) {
+          console.error(error.message);
         }
-      });
+      }
     }
 
     // save partials
@@ -561,12 +523,10 @@ export default function Edit() {
     <>
       {(
         isCardQueryLoading
-        || isCardSeriesQueryLoading
         || isTagsQueryLoading
       ) && <p>Loading...</p>}
       {(
         isCardQueryLoaded
-        && isCardSeriesQueryLoaded
         && isTagsQueryLoaded
         && card.tagsNames
       ) && (
@@ -592,34 +552,30 @@ export default function Edit() {
               />
             </InputGroup>
           </div>
-          <div
-            id="series-picker"
-            onClick={() => setActivePartial(null)}
-          >
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Series:</label>
-            <div className="flex">
-              <InputPicker
-                creatable
-                locale={{ createOption: 'New series: {0}' }}
-                data={seriesPickerData}
-                style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-                value={cardSeries[card.card_series]?.id}
-                onChange={handleSeriesPickerChange}
-                onCreate={handleSeriesPickerChange}
-                onClean={handleClearSeries}
-              />
-              <DialogReorderCardsInSeries
-                series={cardSeries[card.card_series]}
-                cardsFromSeries={cardsFromSeries}
-                onSave={(value) => {
-                  setCardsFromSeries(value);
-                  setIsCardInSeriesOrderChanged(true);
-                }}
-              >
-              </DialogReorderCardsInSeries>
-            </div>
+          <div className="relative mt-2">
+            <DialogEditSeries
+              onlySelect={false}
+              selectedSeries={selectedCardSeries}
+              cardSeries={cachedCardSeriesData ?? []}
+              disabled={isCardSeriesQueryLoading}
+              placeForReorderBtn={
+                !!selectedCardSeries && cardsFromSeries.length > 1
+              }
+              onSave={(cardSeries: CardSeries) => {
+                setSelectedCardSeries(cardSeries);
+                refetchCardSeries();
+              }}
+              onClearSeries={() => setSelectedCardSeries(null)}
+            />
+            <DialogReorderCardsInSeries
+              series={selectedCardSeries!}
+              cardsFromSeries={cardsFromSeries}
+              onSave={(value) => {
+                setCardsFromSeries(value);
+                setIsCardInSeriesOrderChanged(true);
+              }}
+            >
+            </DialogReorderCardsInSeries>
           </div>
           <div
             id="tag-picker"

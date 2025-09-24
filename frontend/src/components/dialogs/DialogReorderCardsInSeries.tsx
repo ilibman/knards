@@ -102,7 +102,7 @@ export default function DialogReorderCardsInSeries(props: Props) {
             onClick={() => setDialogOpened(true)}
           >
             <div
-              className="relative top-2.5 h-[32px] mr-3 bg-white
+              className="absolute top-[47%] right-0 h-[32px] mr-3 bg-white
                 kn-base-btn"
             >
               <GoListOrdered />

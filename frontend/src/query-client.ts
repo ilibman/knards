@@ -156,18 +156,22 @@ export function getCardPartialsForCardQueryOptions(
   return queryOptions({
     queryKey: ['card_partials', cardId],
     queryFn: async (meta) => {
-      const response = await api.get<Array<CardPartial>>(
-        `api/cards/card-partials/?card=${cardId}`,
-        {
-          headers: {
-            Authorization: `JWT ${accessToken}`
-          },
-          withCredentials: true,
-          signal: meta.signal
-        }
-      );
-    
-      return response.data;
+      if (cardId) {
+        const response = await api.get<Array<CardPartial>>(
+          `api/cards/card-partials/?card=${cardId}`,
+          {
+            headers: {
+              Authorization: `JWT ${accessToken}`
+            },
+            withCredentials: true,
+            signal: meta.signal
+          }
+        );
+      
+        return response.data;
+      } else {
+        return [];
+      }
     }
   });
 }

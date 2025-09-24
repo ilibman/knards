@@ -108,6 +108,27 @@ h6 {
   }
 }
 
+.kn-btn-disabled {
+  color: var(--color-white);
+  background-color: var(--color-white-hover-dark);
+  border-color: var(--color-white);
+  pointer-events: none;
+}
+
+.kn-picker-disabled {
+  background-color: var(--color-white-hover-dark);
+  border-color: var(--color-white);
+  pointer-events: none;
+}
+
+.kn-picker-clear-btn {
+  &:hover {
+    svg {
+      stroke: var(--color-red);
+    }
+  }
+}
+
 .dialog-reorder-card-in-series {
   #items {
     .sortable-chosen {
@@ -124,5 +145,22 @@ h6 {
       border-right: 1px solid var(--color-black);
       border-left: 1px solid var(--color-black);
     }
+  }
+}
+
+.dialog-edit-series {
+  height: calc(100vh - 2.5rem);
+  width: calc(100vw - 2.5rem);
+
+  .dialog-close-btn {
+    &:hover {
+      svg {
+        opacity: 50%;
+      }
+    }
+  }
+
+  .series-container {
+    max-height: calc(100vh - 168px);
   }
 }

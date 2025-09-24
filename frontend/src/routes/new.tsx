@@ -1,21 +1,20 @@
 import { useState, useEffect, createRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Input,
   InputGroup,
-  InputPicker,
   TagPicker,
 } from 'rsuite';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 import useAuth from '../context/AuthProvider';
 import {
+  getCardSeriesQueryOptions,
+  getTagsQueryOptions,
   createNewCard,
-  createNewCardSeries,
   createNewTag,
   createNewCardPartial
 } from '../query-client';
-import api from '../api';
 import {
   Card,
   CardSeries,
@@ -25,27 +24,47 @@ import {
 import PartialEditor from '../components/partial-editor/PartialEditor';
 import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
+import DialogEditSeries from '../components/dialogs/DialogEditSeries';
 
 export default function New() {
   const { authTokens } = useAuth();
 
   const [card, setCard] = useState<Partial<Card>>({});
-  const [cardSeries, setCardSeries] = useState<Array<CardSeries>>([]);
-  const [tags, setTags] = useState<Array<Tag>>([]);
+  const [selectedCardSeries, setSelectedCardSeries]
+    = useState<CardSeries | null>(null);
   const [cardPartials, setCardPartials]
     = useState<Array<Record<string, unknown>>>([]);
   
-  const [seriesPickerData, setSeriesPickerData] = useState([]);
-  const [tagPickerData, setTagPickerData] = useState([]);
-  
-  const [isCardSeriesLoading, setIsCardSeriesLoading] = useState(true);
-  const [isTagsLoading, setIsTagsLoading] = useState(true);
+  const [tagPickerData, setTagPickerData] = useState<Array<{
+    label: string;
+    value: string;
+  }>>([]);
   const [isCardSaving, setIsCardSaving] = useState(false);
-
   const [activePartial, setActivePartial] = useState(null);
-
-  const seriesRef = createRef<any>();
   const tagsRef = createRef<any>();
+
+  const {
+    data: cachedCardSeriesData,
+    isLoading: isCardSeriesQueryLoading,
+    refetch: refetchCardSeries
+  } = useQuery({
+    ...getCardSeriesQueryOptions(authTokens.access)
+  });
+
+  const {
+    data: cachedTagsData,
+    isLoading: isTagsQueryLoading,
+    isFetched: isTagsQueryLoaded,
+    refetch: refetchTags
+  } = useQuery({
+    ...getTagsQueryOptions(authTokens.access)
+  });
+
+  useEffect(() => {
+    setTagPickerData(
+      cachedTagsData!.map((_) => ({ label: _.name, value: _.name }))
+    );
+  }, [cachedTagsData]);
 
   const createNewCardMutation = useMutation({
     mutationFn: (
@@ -53,15 +72,6 @@ export default function New() {
       { accessToken: string; cardData: Partial<Card>; }
     ) => (
       createNewCard(accessToken, cardData)
-    )
-  });
-
-  const createNewCardSeriesMutation = useMutation({
-    mutationFn: (
-      { accessToken, seriesName }:
-      { accessToken: string; seriesName: string; }
-    ) => (
-      createNewCardSeries(accessToken, seriesName)
     )
   });
 
@@ -82,92 +92,14 @@ export default function New() {
       createNewCardPartial(accessToken, cardPartialData)
     )
   });
-  
-  useEffect(() => {
-    const fetchCardSeries = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/card-series/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        const cardSeriesMap = {};
-        response.data.map((_) => (
-          cardSeriesMap[_.id] = { ..._ }
-        ));
-        setSeriesPickerData(
-          response.data.map((_) => ({ label: _.name, value: _.id }))
-        );
-        setCardSeries(cardSeriesMap);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsCardSeriesLoading(false);
-      }
-    };
-
-    fetchCardSeries();
-  }, []);
-
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const response = await api.get(
-          'api/cards/tags/',
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`
-            },
-            withCredentials: true
-          }
-        );
-        setTagPickerData(
-          response.data.map((_) => ({ label: _.name, value: _.name }))
-        );
-        setTags(response.data);
-      } catch (error) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      } finally {
-        setIsTagsLoading(false);
-      }
-    };
-
-    fetchTags();
-  }, []);
-
-  function handleSeriesPickerCreate(seriesName: string) {
-    createNewCardSeriesMutation.mutate({
-      accessToken: authTokens.access,
-      seriesName
-    }, {
-      onSuccess(responseData: CardSeries) {
-        setCard({
-          ...card,
-          n_in_series: 1,
-          card_series: responseData.id
-        });
-      }
-    });
-  }
 
   function handleCreateTag(newTag: { value: string; label: string; }) {
     createNewTagMutation.mutate({
       accessToken: authTokens.access,
       tagName: newTag.label
     }, {
-      onSuccess(responseData: Tag) {
-        setTags([
-          ...tags,
-          { ...responseData }
-        ]);
+      onSuccess() {
+        refetchTags();
       }
     });
   }
@@ -190,11 +122,8 @@ export default function New() {
 
   async function saveCard() {
     const cardToSave = { ...card };
-    const seriesId = Object.values(cardSeries).find(
-      (_) => seriesRef.current?.target.textContent === _.name
-    )?.id;
-    if (seriesId) {
-      cardToSave.card_series = seriesId;
+    if (selectedCardSeries) {
+      cardToSave.card_series = selectedCardSeries.id;
     }
     tagsRef.current?.target
       .children[0].children[0].children[0]
@@ -204,7 +133,7 @@ export default function New() {
           cardToSave.tags = [];
         }
 
-        const tagId = tags.find((__) => _ === __.name)?.id;
+        const tagId = cachedTagsData!.find((__) => _ === __.name)?.id;
         if (tagId) {
           cardToSave.tags.push(tagId);
         }
@@ -320,12 +249,10 @@ export default function New() {
   return (
     <>
       {(
-        isCardSeriesLoading
-        || isTagsLoading
+        isTagsQueryLoading
       ) && <p>Loading...</p>}
       {(
-        !isCardSeriesLoading
-        && !isTagsLoading
+        !isTagsQueryLoading
       ) && (
         <>
           <div
@@ -350,26 +277,19 @@ export default function New() {
               />
             </InputGroup>
           </div>
-          <div
-            id="series-picker"
-            onClick={() => setActivePartial(null)}
-          >
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Series:</label>
-            <div className="flex">
-              <InputPicker
-                creatable
-                locale={{ createOption: 'New series: {0}' }}
-                data={seriesPickerData}
-                style={{
-                  width: 'calc(100% - 20px)',
-                  margin: '4px 10px 10px 10px'
-                }}
-                onCreate={handleSeriesPickerCreate}
-                ref={seriesRef}
-              />
-            </div>
+          <div className="relative mt-2">
+            <DialogEditSeries
+              onlySelect={false}
+              selectedSeries={selectedCardSeries}
+              cardSeries={cachedCardSeriesData ?? []}
+              disabled={isCardSeriesQueryLoading}
+              placeForReorderBtn={false}
+              onSave={(cardSeries: CardSeries) => {
+                setSelectedCardSeries(cardSeries);
+                refetchCardSeries();
+              }}
+              onClearSeries={() => setSelectedCardSeries(null)}
+            />
           </div>
           <div
             id="tag-picker"

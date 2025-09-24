@@ -5,7 +5,6 @@ import { useCookies } from 'react-cookie';
 import {
   Input,
   InputGroup,
-  SelectPicker,
   TagPicker,
   Radio,
   RadioGroup
@@ -26,6 +25,7 @@ import {
   CardPartial
 } from '../models';
 import ListStatsAndRevise from '../components/ListStatsAndRevise';
+import DialogEditSeries from '../components/dialogs/DialogEditSeries';
 
 export default function List() {
   const { authTokens } = useAuth();
@@ -37,8 +37,11 @@ export default function List() {
   }>({});
   const [preselectedTags, setPreselectedTags] = useState<Array<number>>([]);
 
-  const [seriesPickerData, setSeriesPickerData]
-    = useState<Array<{ label: string; value: string; }>>([]);
+  const [cardSeriesMap, setCardSeriesMap]
+    = useState<Record<number, CardSeries>>({});
+  const [selectedCardSeries, setSelectedCardSeries]
+    = useState<CardSeries | null>(null);
+
   const [tagPickerData, setTagPickerData]
     = useState<Array<{ label: string; value: string; }>>([]);
 
@@ -54,22 +57,20 @@ export default function List() {
     ...getCardsQueryOptions(authTokens.access, params)
   });
 
-  const { data: cardSeries, isFetching: isCardSeriesQueryLoading } = useQuery({
-    ...getCardSeriesQueryOptions(authTokens.access),
-    select: (result) => {
-      const cardSeriesMap: Record<number, CardSeries> = {};
-      result.map((_) => (
-        cardSeriesMap[_.id] = { ..._ }
-      ));
-      return cardSeriesMap;
-    }
+  const {
+    data: cardSeries,
+    isLoading: isCardSeriesQueryLoading,
+  } = useQuery({
+    ...getCardSeriesQueryOptions(authTokens.access)
   });
 
   useEffect(() => {
     if (cardSeries) {
-      setSeriesPickerData(
-        Object.values(cardSeries).map((_) => ({ label: _.name, value: _.name }))
-      );
+      const cardSeriesMap: Record<number, CardSeries> = {};
+      cardSeries.map((_) => (
+        cardSeriesMap[_.id] = { ..._ }
+      ));
+      setCardSeriesMap(cardSeriesMap);
     }
   }, [cardSeries]);
 
@@ -127,24 +128,16 @@ export default function List() {
     fetchNextPage();
   });
 
-  function handleSeriesPickerChange(value: string | null) {
-    if (!cardSeries) {
-      return false;
-    }
-
-    if (!value || value.length === 0) {
+  useEffect(() => {
+    if (!selectedCardSeries) {
       delete params.series;
       setParams({ ...params });
-      return false;
+      return;
     }
-
-    const selectedSeriesId = Object.values(cardSeries).find((_) => (
-      _.name === value
-    ))?.id;
       
-    params.series = `series=${selectedSeriesId}`
+    params.series = `series=${selectedCardSeries.id}`
     setParams({ ...params });
-  }
+  }, [selectedCardSeries]);
 
   function handleTagSelect(value: Array<string>) {
     if (!tags) {
@@ -216,28 +209,26 @@ export default function List() {
     <>
       {(
         isCardsQueryLoading
-        || isCardSeriesQueryLoading
         || isTagsQueryLoading
         || isCardPartialsQueryLoading
       ) && <p>Loading...</p>}
       {(
         !isCardsQueryLoading
-        && !isCardSeriesQueryLoading
         && !isTagsQueryLoading
         && !isCardPartialsQueryLoading
       ) && (
         <>
-          <div
-            className="mt-2"
-            id="series-picker"
-          >
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Series:</label>
-            <SelectPicker
-              data={seriesPickerData}
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              onChange={handleSeriesPickerChange}
+          <div className="mt-2">
+            <DialogEditSeries
+              onlySelect={true}
+              selectedSeries={selectedCardSeries}
+              cardSeries={cardSeries!}
+              disabled={isCardSeriesQueryLoading}
+              placeForReorderBtn={false}
+              onSave={(cardSeries: CardSeries) => (
+                setSelectedCardSeries(cardSeries)
+              )}
+              onClearSeries={() => setSelectedCardSeries(null)}
             />
           </div>
           <div id="tag-picker">
@@ -317,7 +308,7 @@ export default function List() {
                           <div className="px-2 border-r">
                             {
                               _.card_series
-                                ? `#${_.n_in_series} in ${cardSeries[_.card_series]?.name}`
+                                ? `#${_.n_in_series} in ${cardSeriesMap[_.card_series]?.name}`
                                 : ''
                             }
                           </div>
