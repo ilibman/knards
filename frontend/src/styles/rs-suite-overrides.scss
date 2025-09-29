@@ -19,53 +19,6 @@
   }
 }
 
-.rs-picker-default {
-  height: 44px;
-  border: none !important;
-  outline: none !important;
-}
-
-.rs-picker-toggle-wrapper {
-  background-color: var(--color-input-fill) !important;
-  border: 2px solid var(--color-input-border) !important;
-  border-radius: var(--border-radius);
-  box-shadow: 0 2px 2px -1px var(--color-input-shadow);
-  transition: none !important;
-
-  &:hover, &:active, &:focus, &.rs-picker-focused {
-    border-color: var(--color-input-border-active) !important;
-    box-shadow: 0 2px 2px -1px var(--color-input-shadow-active) !important;
-  }
-}
-
-.rs-picker-toggle:focus-visible {
-  outline: none;
-}
-
-.rs-picker-default .rs-picker-toggle {
-  height: 100%;
-  
-  background-color: var(--color-input-fill) !important;
-  border: none !important;
-}
-
-.rs-picker-textbox {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding-left: 10px;
-  padding-bottom: 0 !important;
-}
-
-.rs-picker-toggle-wrapper:has(.rs-picker-toggle-active) {
-  border: 2px solid var(--color-input-border-active) !important;
-  box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
-
-  .rs-picker-toggle-active {
-    box-shadow: none !important;
-  }
-}
-
 .rs-input-group-addon {
   height: 100% !important;
 }
@@ -78,129 +31,10 @@
   top: 10px;
 }
 
-.rs-picker-toggle-caret {
-  top: 10px !important;
-  right: 9px !important;
-  width: 1.75em;
-  height: 1.75em;
-}
-
-.rs-picker-toggle-clean {
-  top: 10px !important;
-  transition: none;
-
-  svg {
-    width: 1.25em;
-    height: 1.25em;
-    filter: drop-shadow(1px 0 0 var(--color-black));
-  }
-
-  &:hover {
-    svg {
-      filter: drop-shadow(1px 0 0 var(--color-red));
-
-      path {
-        stroke-width: 2;
-      }
-    }
-  }
-}
-
-.rs-picker-tag-wrapper {
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-.rs-tag {
-  display: inline-flex;
-  align-items: center;
-  margin: 0 !important;
-  padding-right: 8px !important;
-  
-  background-color: var(--color-tag-background);
-
-  & + .rs-tag {
-    margin-left: 6px !important;
-  }
-
-  span {
-    color: var(--color-tag-text);
-  }
-
-  .rs-tag-text {
-    line-height: 1.2;
-  }
-
-  .rs-btn-close {
-    position: relative;
-    top: 0 !important;
-
-    margin-left: 10px;
-    padding: 0;
-    stroke: var(--color-tag-text);
-
-    &:hover {
-      stroke: var(--color-tag-close-button-hover);
-    }
-  }
-}
-
 .rs-input,
-.rs-stack-item,
-.rs-picker-search-bar-input,
-.rs-picker-search-input,
-.rs-checkbox-checker,
-.rs-picker-none {
+.rs-stack-item {
   color: var(--color-input-text) !important;
   font-size: 1.125rem !important;
-}
-
-.rs-picker-search-input {
-  padding-left: 0 !important;
-}
-
-.rs-picker-select-menu-item, .rs-check-item {
-  color: var(--color-dropdown-text);
-  font-size: 1.125rem;
-
-  &:hover, &-focus, &-active {
-    color: var(--color-dropdown-selected-item-text) !important;
-    background-color: var(--color-dropdown-selected-item-background) !important;
-  }
-}
-
-.rs-check-item {
-  label {
-    color: var(--color-dropdown-text);
-
-    &:hover {
-      .rs-checkbox-wrapper .rs-checkbox-inner:before {
-        border-color: var(--color-black);
-      }
-    }
-  }
-
-  &:hover, &-focus, &-active {
-    label {
-      color: var(--color-dropdown-selected-item-text) !important;
-      background-color: var(--color-dropdown-selected-item-background) !important;
-    }
-  }
-}
-
-.rs-picker-toggle-value {
-  color: var(--color-input-text) !important;
-}
-
-.rs-picker-toggle-placeholder {
-  display: none;
-}
-
-.rs-tag {
-  .rs-tag-text {
-    font-size: 1rem !important;
-  }
 }
 
 .rs-input-group.rs-input-group-inside
@@ -208,21 +42,8 @@
   font-size: 18px !important;
 }
 
-.rs-picker-search-bar-search-icon {
-  top: 17px !important;
-  width: 16px !important;
-}
-
 .rs-radio-inline {
   margin-right: 20px !important;
-}
-
-.rs-picker-select-menu, .rs-picker-check-menu {
-  background-color: var(--color-dropdown-background);
-}
-
-.rs-checkbox-wrapper .rs-checkbox-inner:before {
-  border-color: var(--color-black);
 }
 
 .rs-radio-checker {

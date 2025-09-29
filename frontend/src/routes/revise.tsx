@@ -162,8 +162,8 @@ export default function Revise() {
 
   return (
     <>
-      {isLoading && <p>Loading...</p>}
-      {isCardSaving && <p>Saving...</p>}
+      {isLoading && <p className="mt-2 ml-8 text-white text-lg">Loading...</p>}
+      {isCardSaving && <p className="mt-2 ml-8 text-white text-lg">Saving...</p>}
       {!isLoading && !isCardSaving && (
         <div className="p-2.5 flex border-b-2 revision">
           <div className="w-1/2 metadata-container">
@@ -307,7 +307,7 @@ export default function Revise() {
       )}
       {(
         arePartialsHidden || !reviseCardPartials
-      ) && <p>Something happening...</p>}
+      ) && <p className="mt-2 ml-8 text-white text-lg">Something's happening...</p>}
       {(
         !arePartialsHidden && reviseCardPartials
       ) && (

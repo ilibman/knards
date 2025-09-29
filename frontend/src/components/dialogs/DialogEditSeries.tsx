@@ -136,7 +136,7 @@ export default function DialogEditSeries(props: Props) {
             />
           </div>
           <div className="overflow-auto series-container">
-            {props.cardSeries.map((_) => (
+            {props.cardSeries?.map((_) => (
               <div
                 key={_.id}
                 className="py-2 px-3 text-white text-lg

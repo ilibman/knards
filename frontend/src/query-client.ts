@@ -17,11 +17,11 @@ import {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // staleTime: Infinity,
-      staleTime: 1 * 60 * 1000, // cache the data for 1 min
+      staleTime: Infinity,
+      // staleTime: 1 * 60 * 1000, // cache the data for 1 min
       // gcTime: Infinity,
       // refetchOnWindowFocus: false,
-      refetchOnMount: 'always',
+      // refetchOnMount: 'always',
       // refetchOnReconnect: false,
     },
     mutations: {}
@@ -268,6 +268,69 @@ export async function createNewCardPartial(
   const response = await api.post(
     'api/cards/card-partials/',
     { ...cardPartialData },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function updateCardPartial(
+  accessToken: string,
+  cardPartialId: number,
+  cardPartialData: Partial<CardPartial>
+) {
+  const response = await api.patch(
+    `api/cards/card-partials/${cardPartialId}/`,
+    { ...cardPartialData },
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function deleteCardPartial(
+  accessToken: string,
+  cardPartialId: number
+) {
+  const response = await api.delete(
+    `api/cards/card-partials/${cardPartialId}/`,
+    {
+      headers: {
+        Authorization: `JWT ${accessToken}`,
+        'X-CSRFToken': document.cookie.replace(
+          /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
+        )
+      },
+      withCredentials: true
+    }
+  );
+
+  return response.data;
+}
+
+export async function reorderCardsInSeries(
+  accessToken: string,
+  cardsFromSeries: Array<Card>
+) {
+  const response = await api.post(
+    `api/cards/cards/reorder_cards_in_series/`,
+    { cards_from_series: cardsFromSeries },
     {
       headers: {
         Authorization: `JWT ${accessToken}`,

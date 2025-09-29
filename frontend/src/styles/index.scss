@@ -148,7 +148,8 @@ h6 {
   }
 }
 
-.dialog-edit-series {
+.dialog-edit-series,
+.dialog-edit-tags {
   height: calc(100vh - 2.5rem);
   width: calc(100vw - 2.5rem);
 
@@ -159,8 +160,28 @@ h6 {
       }
     }
   }
+}
 
+.dialog-edit-series {
   .series-container {
+    max-height: calc(100vh - 168px);
+  }
+}
+
+.dialog-edit-tags {
+  .type-in-tag-input {
+    width: calc(100% - 86px);
+  }
+
+  .type-in-tag-input + div {
+    margin-top: 2px;
+    max-height: 38px;
+    max-width: 38px;
+    padding: 0.2rem;
+  }
+
+  .selected-tags-container,
+  .available-tags-container {
     max-height: calc(100vh - 168px);
   }
 }

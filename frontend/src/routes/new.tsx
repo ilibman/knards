@@ -1,9 +1,8 @@
-import { useState, useEffect, createRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Input,
   InputGroup,
-  TagPicker,
 } from 'rsuite';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
@@ -12,7 +11,6 @@ import {
   getCardSeriesQueryOptions,
   getTagsQueryOptions,
   createNewCard,
-  createNewTag,
   createNewCardPartial
 } from '../query-client';
 import {
@@ -25,6 +23,7 @@ import PartialEditor from '../components/partial-editor/PartialEditor';
 import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
 import DialogEditSeries from '../components/dialogs/DialogEditSeries';
+import DialogEditTags from '../components/dialogs/DialogEditTags';
 
 export default function New() {
   const { authTokens } = useAuth();
@@ -34,14 +33,9 @@ export default function New() {
     = useState<CardSeries | null>(null);
   const [cardPartials, setCardPartials]
     = useState<Array<Record<string, unknown>>>([]);
-  
-  const [tagPickerData, setTagPickerData] = useState<Array<{
-    label: string;
-    value: string;
-  }>>([]);
-  const [isCardSaving, setIsCardSaving] = useState(false);
+  const [selectedTags, setSelectedTags]
+    = useState<Array<Tag>>([]);
   const [activePartial, setActivePartial] = useState(null);
-  const tagsRef = createRef<any>();
 
   const {
     data: cachedCardSeriesData,
@@ -60,13 +54,10 @@ export default function New() {
     ...getTagsQueryOptions(authTokens.access)
   });
 
-  useEffect(() => {
-    setTagPickerData(
-      cachedTagsData!.map((_) => ({ label: _.name, value: _.name }))
-    );
-  }, [cachedTagsData]);
-
-  const createNewCardMutation = useMutation({
+  const {
+    mutate: createNewCardMutation,
+    isPending: isCardSaving
+  } = useMutation({
     mutationFn: (
       { accessToken, cardData }:
       { accessToken: string; cardData: Partial<Card>; }
@@ -75,16 +66,10 @@ export default function New() {
     )
   });
 
-  const createNewTagMutation = useMutation({
-    mutationFn: (
-      { accessToken, tagName }:
-      { accessToken: string; tagName: string; }
-    ) => (
-      createNewTag(accessToken, tagName)
-    )
-  });
-
-  const createNewCardPartialMutation = useMutation({
+  const {
+    mutate: createNewCardPartialMutation,
+    isPending: isCardPartialSaving
+  } = useMutation({
     mutationFn: (
       { accessToken, cardPartialData }:
       { accessToken: string; cardPartialData: Partial<CardPartial>; }
@@ -92,17 +77,6 @@ export default function New() {
       createNewCardPartial(accessToken, cardPartialData)
     )
   });
-
-  function handleCreateTag(newTag: { value: string; label: string; }) {
-    createNewTagMutation.mutate({
-      accessToken: authTokens.access,
-      tagName: newTag.label
-    }, {
-      onSuccess() {
-        refetchTags();
-      }
-    });
-  }
 
   function addPartial(index: number, type: string) {
     cardPartials.splice(index, 0, {
@@ -125,23 +99,16 @@ export default function New() {
     if (selectedCardSeries) {
       cardToSave.card_series = selectedCardSeries.id;
     }
-    tagsRef.current?.target
-      .children[0].children[0].children[0]
-      .value.split(',')
-      .forEach((_: string) => {
+    selectedTags.map((_) => _.id)
+      .forEach((tagId: number) => {
         if (!cardToSave.tags) {
           cardToSave.tags = [];
         }
 
-        const tagId = cachedTagsData!.find((__) => _ === __.name)?.id;
-        if (tagId) {
-          cardToSave.tags.push(tagId);
-        }
+        cardToSave.tags.push(tagId);
       });
 
-    setIsCardSaving(true);
-
-    createNewCardMutation.mutate({
+    createNewCardMutation({
       accessToken: authTokens.access,
       cardData: cardToSave
     }, {
@@ -149,7 +116,6 @@ export default function New() {
         setCard(responseData);
 
         if (cardPartials.length === 0) {
-          setIsCardSaving(false);
           setCard({});
         }
       }
@@ -160,7 +126,7 @@ export default function New() {
     if (card.id) {
       // save partials
       cardPartials.forEach(async (_, i) => {
-        createNewCardPartialMutation.mutate({
+        createNewCardPartialMutation({
           accessToken: authTokens.access,
           cardPartialData: {
             ..._,
@@ -170,7 +136,6 @@ export default function New() {
         }, {
           onSuccess() {
             if (i === cardPartials.length - 1) {
-              setIsCardSaving(false);
               setCard({});
               setCardPartials([]);
             }
@@ -250,7 +215,9 @@ export default function New() {
     <>
       {(
         isTagsQueryLoading
-      ) && <p>Loading...</p>}
+      ) && <p className="mt-2 ml-8 text-white text-lg">Loading...</p>}
+      {(isCardSaving || isCardPartialSaving)
+        && <p className="mt-2 ml-8 text-white text-lg">Saving...</p>}
       {(
         !isTagsQueryLoading
       ) && (
@@ -265,7 +232,7 @@ export default function New() {
             >Title:</label>
             <InputGroup
               inside
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
+              style={{ width: 'calc(100% - 20px)', margin: '0px 10px 10px 10px' }}
             >
               <Input
                 spellCheck={false}
@@ -291,20 +258,21 @@ export default function New() {
               onClearSeries={() => setSelectedCardSeries(null)}
             />
           </div>
-          <div
-            id="tag-picker"
-            onClick={() => setActivePartial(null)}
-          >
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Tags:</label>
-            <TagPicker
-              creatable
-              locale={{ createOption: 'New tag: {0}' }}
-              data={tagPickerData}
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              onCreate={(selectedTags, newTag) => handleCreateTag(newTag)}
-              ref={tagsRef}
+          <div className="my-2">
+            <DialogEditTags
+              onlySelect={true}
+              selectedTags={selectedTags}
+              tags={cachedTagsData!}
+              disabled={isTagsQueryLoading}
+              onCreateNewTag={(createdTag: Tag, selectedTags: Array<Tag>) => {
+                setSelectedTags([
+                  ...selectedTags,
+                  createdTag
+                ]);
+                refetchTags();
+              }}
+              onSave={(tags: Array<Tag>) => setSelectedTags(tags)}
+              onClearTags={() => setSelectedTags([])}
             />
           </div>
 

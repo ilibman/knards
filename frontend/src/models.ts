@@ -15,11 +15,10 @@ export type CardSeries = {
 
 export type Card = {
   id: number;
-  card_series: number;
+  card_series: number | null;
   n_in_series: number;
   title: string;
-  tags: Array<Tag | number>;
-  tagsNames: Array<string>;
+  tags: Array<number>;
   owner: number;
   created_at: string;
   updated_at: string;
@@ -55,12 +54,12 @@ export type Tag = {
 }
 
 export type CardPartial = {
-  id: number;
+  id?: number;
   card: number;
-  is_prompt: boolean;
+  is_prompt?: boolean;
   content: any;
   prompt_initial_content: any;
-  position: number;
+  position?: number;
 }
 
 export type CardScore = {

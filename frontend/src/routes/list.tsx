@@ -5,7 +5,6 @@ import { useCookies } from 'react-cookie';
 import {
   Input,
   InputGroup,
-  TagPicker,
   Radio,
   RadioGroup
 } from 'rsuite';
@@ -26,6 +25,7 @@ import {
 } from '../models';
 import ListStatsAndRevise from '../components/ListStatsAndRevise';
 import DialogEditSeries from '../components/dialogs/DialogEditSeries';
+import DialogEditTags from '../components/dialogs/DialogEditTags';
 
 export default function List() {
   const { authTokens } = useAuth();
@@ -35,16 +35,18 @@ export default function List() {
     tagInclusion?: string;
     fulltext?: string;
   }>({});
-  const [preselectedTags, setPreselectedTags] = useState<Array<number>>([]);
 
   const [cardSeriesMap, setCardSeriesMap]
     = useState<Record<number, CardSeries>>({});
   const [selectedCardSeries, setSelectedCardSeries]
     = useState<CardSeries | null>(null);
 
-  const [tagPickerData, setTagPickerData]
-    = useState<Array<{ label: string; value: string; }>>([]);
+  const [tagsMap, setTagsMap]
+    = useState<Record<number, Tag>>({});
+  const [selectedTags, setSelectedTags]
+    = useState<Array<Tag>>([]);
 
+  const [tagsChanged, setTagsChanged] = useState<boolean>(false);
   const [cookies, setCookies, removeCookies] = useCookies(['tags']);
 
   const {
@@ -64,48 +66,13 @@ export default function List() {
     ...getCardSeriesQueryOptions(authTokens.access)
   });
 
-  useEffect(() => {
-    if (cardSeries) {
-      const cardSeriesMap: Record<number, CardSeries> = {};
-      cardSeries.map((_) => (
-        cardSeriesMap[_.id] = { ..._ }
-      ));
-      setCardSeriesMap(cardSeriesMap);
-    }
-  }, [cardSeries]);
-
-  const { data: tags, isFetching: isTagsQueryLoading } = useQuery({
-    ...getTagsQueryOptions(authTokens.access),
-    select: (result) => {
-      const tagsMap: Record<number, Tag> = {};
-      result.map((_) => (
-        tagsMap[_.id] = { ..._ }
-      ));
-      return tagsMap;
-    }
+  const {
+    data: tags,
+    isFetching: isTagsQueryLoading,
+    refetch: refetchTags
+  } = useQuery({
+    ...getTagsQueryOptions(authTokens.access)
   });
-
-  useEffect(() => {
-    if (tags) {
-      setTagPickerData(
-        Object.values(tags).map((_) => ({ label: _.name, value: _.name }))
-      );
-
-      if (cookies.tags) {
-        const preselectedTagsIds
-          = JSON.stringify(cookies.tags).indexOf(',') !== -1
-            ? cookies.tags.split(',')
-            : cookies.tags;
-        params.tags = `tags=${preselectedTagsIds}`;
-        setParams({ ...params });
-        setPreselectedTags(
-          preselectedTagsIds.length
-            ? preselectedTagsIds.map((_: number) => tags[_]?.name)
-            : [tags[preselectedTagsIds]?.name]
-        );
-      }
-    }
-  }, [tags]);
 
   const {
     data: cardPartials,
@@ -129,6 +96,40 @@ export default function List() {
   });
 
   useEffect(() => {
+    if (cardSeries) {
+      const cardSeriesMap: Record<number, CardSeries> = {};
+      cardSeries.map((_) => (
+        cardSeriesMap[_.id] = { ..._ }
+      ));
+      setCardSeriesMap(cardSeriesMap);
+    }
+  }, [cardSeries]);
+
+  useEffect(() => {
+    if (tags) {
+      const tagsMap: Record<number, Tag> = {};
+      tags.map((_) => (
+        tagsMap[_.id] = { ..._ }
+      ));
+      setTagsMap(tagsMap);
+
+      if (cookies.tags) {
+        const preselectedTagsIds
+          = JSON.stringify(cookies.tags).indexOf(',') !== -1
+            ? cookies.tags.split(',')
+            : cookies.tags;
+        params.tags = `tags=${preselectedTagsIds}`;
+        setParams({ ...params });
+        setSelectedTags(
+          preselectedTagsIds.length
+            ? preselectedTagsIds.map((_: number) => tagsMap[_])
+            : [tagsMap[preselectedTagsIds]]
+        );
+      }
+    }
+  }, [tags]);
+
+  useEffect(() => {
     if (!selectedCardSeries) {
       delete params.series;
       setParams({ ...params });
@@ -139,41 +140,25 @@ export default function List() {
     setParams({ ...params });
   }, [selectedCardSeries]);
 
-  function handleTagSelect(value: Array<string>) {
-    if (!tags) {
-      return false;
+  useEffect(() => {
+    if (!tagsChanged) {
+      return;
     }
 
-    const selectedTagIds = Object.values(tags).filter((_) => (
-      value.includes(_.name)
-    )).map((_) => _.id);
-
-    params.tags = `tags=${selectedTagIds}`;
-    setCookies('tags', selectedTagIds.join(','), { path: '/' });
-    setParams({ ...params });
-  }
-
-  function handleTagRemove(value: string) {
-    if (!tags) {
-      return false;
-    }
-
-    const tagId = Object.values(tags).find((_) => _.name === value)?.id;
-    const tagList
-      = JSON.stringify(cookies.tags).indexOf(',') !== -1
-        ? cookies.tags.split(',').filter((_: string) => +_ !== tagId)
-        : [];
-
-    if (tagList.length === 0) {
+    if (selectedTags.length === 0) {
       delete params.tags;
       setParams({ ...params });
       removeCookies('tags');
     } else {
-      params.tags = `tags=${tagList}`;
+      params.tags = `tags=${selectedTags.map((_) => _.id)}`;
       setParams({ ...params });
-      setCookies('tags', tagList.join(','), { path: '/' });
+      setCookies(
+        'tags',
+        selectedTags.map((_) => _.id).join(','),
+        { path: '/' }
+      );
     }
-  }
+  }, [selectedTags]);
 
   function handleTagInclusionSettingChange(value: string) {
     params.tagInclusion = `tag_inclusion=${value}`;
@@ -211,7 +196,7 @@ export default function List() {
         isCardsQueryLoading
         || isTagsQueryLoading
         || isCardPartialsQueryLoading
-      ) && <p>Loading...</p>}
+      ) && <p className="mt-2 ml-8 text-white text-lg">Loading...</p>}
       {(
         !isCardsQueryLoading
         && !isTagsQueryLoading
@@ -231,17 +216,30 @@ export default function List() {
               onClearSeries={() => setSelectedCardSeries(null)}
             />
           </div>
-          <div id="tag-picker">
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Tags:</label>
-            <TagPicker
-              data={tagPickerData}
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px' }}
-              defaultValue={preselectedTags}
-              onSelect={handleTagSelect}
-              onTagRemove={handleTagRemove}
+          <div className="mt-2">
+            <DialogEditTags
+              onlySelect={true}
+              selectedTags={selectedTags}
+              tags={tags!}
+              disabled={isTagsQueryLoading}
+              onCreateNewTag={(createdTag: Tag, selectedTags: Array<Tag>) => {
+                setSelectedTags([
+                  ...selectedTags,
+                  createdTag
+                ]);
+                refetchTags();
+              }}
+              onSave={(tags: Array<Tag>) => {
+                setTagsChanged(true);
+                setSelectedTags(tags);
+              }}
+              onClearTags={() => {
+                setTagsChanged(true);
+                setSelectedTags([]);
+              }}
             />
+          </div>
+          <div>
             <RadioGroup
               name="tagInclusionSetting"
               inline
@@ -318,7 +316,7 @@ export default function List() {
                         _.tags.length > 0
                         && (
                           <div className="px-2 border-r">{_.tags.map((__) => (
-                            <div key={tags[__].id}>{tags[__]?.name}</div>
+                            <div key={tagsMap[__]?.id}>{tagsMap[__]?.name}</div>
                           ))}</div>
                         )
                       }

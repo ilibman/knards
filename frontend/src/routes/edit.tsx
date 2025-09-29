@@ -3,21 +3,24 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Input,
-  InputGroup,
-  TagPicker,
+  InputGroup
 } from 'rsuite';
-import { ItemDataType } from 'rsuite/esm/MultiCascadeTree';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 
 import useAuth from '../context/AuthProvider';
 import api from '../api';
 import {
+  queryClient,
   getCardQueryOptions,
   getCardSeriesQueryOptions,
   getTagsQueryOptions,
   getCardPartialsForCardQueryOptions,
-  createNewTag
+  updateCard,
+  reorderCardsInSeries,
+  createNewCardPartial,
+  updateCardPartial,
+  deleteCardPartial
 } from '../query-client';
 import {
   Card,
@@ -31,32 +34,33 @@ import PartialEditorWithVim
 import DialogReorderCardsInSeries
   from '../components/dialogs/DialogReorderCardsInSeries';
 import DialogEditSeries from '../components/dialogs/DialogEditSeries';
+import DialogEditTags from '../components/dialogs/DialogEditTags';
 
 export default function Edit() {
   const { authTokens } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   
-  const [card, setCard] = useState<Partial<Card>>({});
-  const [selectedCardSeries, setSelectedCardSeries]
-    = useState<CardSeries | null>(null);
-  const [tags, setTags] = useState<Record<number, Tag>>({});
+  const [card, setCard] = useState<Card | null>(null);
   const [cardPartials, setCardPartials]
     = useState<Array<CardPartial>>([]);
+  const [selectedCardSeries, setSelectedCardSeries]
+    = useState<CardSeries | null>(null);
   const [cardsFromSeries, setCardsFromSeries] = useState<Array<Card>>([]);
-
-  const [tagPickerData, setTagPickerData]
-    = useState<Array<{ label: string; value: string; }>>([]);
-
-  const [isCardInSeriesOrderChanged, setIsCardInSeriesOrderChanged]
-    = useState(false);
-
-  const [isCardsFromSeriesLoading, setIsCardsFromSeriesLoading] = useState(true);
-  const [isCardSaving, setIsCardSaving] = useState(false);
+  const [selectedTags, setSelectedTags]
+    = useState<Array<Tag>>([]);
 
   const [activePartial, setActivePartial] = useState<number | null>(null);
   const [partialsToDeleteIds, setPartialsToDeleteIds]
     = useState<Array<number>>([]);
+
+  const [initialTagsFromCardProcessed, setInitialTagsFromCardProcessed]
+    = useState<boolean>(false);
+  const [isCardInSeriesOrderChanged, setIsCardInSeriesOrderChanged]
+    = useState(false);
+
+  const [isCardsFromSeriesLoading, setIsCardsFromSeriesLoading]
+    = useState(true);
 
   const {
     data: cachedCardData,
@@ -64,105 +68,132 @@ export default function Edit() {
     isFetched: isCardQueryLoaded
   } = useQuery({
     ...getCardQueryOptions(authTokens.access, +id!),
-    enabled: !!id,
+    enabled: !!id
   });
-
-  useEffect(() => {
-    setCard({ ...cachedCardData });
-
-    if (!cachedCardData?.id) {
-      return;
-    }
-
-    if (cachedCardSeriesData && cardsFromSeries.length === 0) {
-      if (card!.card_series) {
-        fetchCardsFromSeries(card!.card_series);
-      }
-    }
-
-    refetchCardPartials();
-  }, [cachedCardData]);
 
   const {
     data: cachedCardSeriesData,
-    isLoading: isCardSeriesQueryLoading,
-    refetch: refetchCardSeries
+    refetch: refetchCardSeries,
+    isLoading: isCardSeriesQueryLoading
   } = useQuery({
-    ...getCardSeriesQueryOptions(authTokens.access),
-    enabled: !!card.id
+    ...getCardSeriesQueryOptions(authTokens.access)
+  });
+
+  const {
+    data: cachedTagsData,
+    refetch: refetchTags,
+    isLoading: isTagsQueryLoading,
+    isFetched: isTagsQueryLoaded
+  } = useQuery({
+    ...getTagsQueryOptions(authTokens.access)
+  });
+
+  const {
+    data: cachedCardPartials,
+    isLoading: isCardPartialsQueryLoading,
+    isFetched: isCardPartialsQueryLoaded
+  } = useQuery({
+    ...getCardPartialsForCardQueryOptions(authTokens.access, +id!),
+    enabled: !!id
+  });
+
+  const {
+    mutate: updateCardMutation,
+    isPending: isCardSaving,
+    isSuccess: isCardSaved
+  } = useMutation({
+    mutationFn: (
+      { accessToken, cardId, cardData }:
+      { accessToken: string; cardId: number; cardData: Partial<Card>; }
+    ) => (
+      updateCard(accessToken, cardId, cardData)
+    )
+  });
+
+  const { mutate: reorderCardsInSeriesMutation } = useMutation({
+    mutationFn: (
+      { accessToken, cardsFromSeries }:
+      { accessToken: string; cardsFromSeries: Array<Card>; }
+    ) => (
+      reorderCardsInSeries(accessToken, cardsFromSeries)
+    )
+  });
+
+  const { mutate: createNewCardPartialMutation } = useMutation({
+    mutationFn: (
+      { accessToken, cardPartialData }:
+      { accessToken: string; cardPartialData: Partial<CardPartial>; }
+    ) => (
+      createNewCardPartial(accessToken, cardPartialData)
+    )
+  });
+
+  const { mutate: updateCardPartialMutation } = useMutation({
+    mutationFn: (
+      { accessToken, cardPartialId, cardPartialData }:
+      {
+        accessToken: string;
+        cardPartialId: number;
+        cardPartialData: Partial<CardPartial>;
+      }
+    ) => (
+      updateCardPartial(accessToken, cardPartialId, cardPartialData)
+    )
+  });
+
+  const { mutate: deleteCardPartialMutation } = useMutation({
+    mutationFn: (
+      { accessToken, cardPartialId }:
+      { accessToken: string; cardPartialId: number; }
+    ) => (
+      deleteCardPartial(accessToken, cardPartialId)
+    )
   });
 
   useEffect(() => {
-    if (card.id && cachedCardSeriesData) {
+    if (cachedCardData?.id) {
+      setCard({ ...cachedCardData });
+    }
+  }, [cachedCardData]);
+
+  useEffect(() => {
+    if (cachedCardSeriesData) {
       const cardSeriesMap: Record<number, CardSeries> = {};
       cachedCardSeriesData.map((_) => (
         cardSeriesMap[_.id] = { ..._ }
       ));
-      setSelectedCardSeries(cardSeriesMap[card.card_series]);
-  
-      if (card && cardsFromSeries.length === 0) {
-        if (card!.card_series) {
-          fetchCardsFromSeries(card!.card_series);
+
+      if (card?.id) {
+        // set selectedCardSeries BUT ONLY ONCE (otherwise inf loop)
+        if (card.card_series && (
+          !selectedCardSeries || selectedCardSeries.id !== card.card_series
+        )) {
+          setSelectedCardSeries(cardSeriesMap[card.card_series]);
+        }
+
+        // this is needed for reorder cards in series func
+        if (cardsFromSeries.length === 0) {
+          if (card.card_series) {
+            fetchCardsFromSeries(card.card_series);
+          }
         }
       }
     }
-  }, [card.id, cachedCardSeriesData]);
-
-  const {
-    data: cachedTagsData,
-    isLoading: isTagsQueryLoading,
-    isFetched: isTagsQueryLoaded
-  } = useQuery({
-    ...getTagsQueryOptions(authTokens.access),
-    enabled: !!card.id,
-    select: (result) => {
-      const tagsMap: Record<number, Tag> = {};
-      result.map((_) => (
-        tagsMap[_.id] = { ..._ }
-      ));
-      return tagsMap;
-    }
-  });
+  }, [card, cachedCardSeriesData]);
 
   useEffect(() => {
-    if (card.id && cachedTagsData) {
-      setTags({ ...cachedTagsData });
-  
-      setTagPickerData(
-        Object.values(cachedTagsData!).map((_) => (
-          { label: _.name, value: _.name }
-        ))
-      );
-  
-      if (card.id && Object.entries(cachedTagsData!).length > 0) {
-        const tagsIds = card.tags!.map((_) => (
-          cachedTagsData![_ as number].id
-        ));
-        const tagsNames = Object.values(cachedTagsData!)
-          .filter((_) => (
-            tagsIds.includes(_.id)
-          ))
-          .map((_) => (
-            _.name
-          ));
-        setCard({
-          ...card,
-          tags: [...tagsIds],
-          tagsNames: [...tagsNames]
-        });
-      }
+    // initial selected tags = tags saved on a card
+    // we need to assign this once at component init
+    if (card?.id
+      && card?.tags
+      && cachedTagsData
+      && !initialTagsFromCardProcessed) {
+      setSelectedTags([
+        ...cachedTagsData.filter((_) => card.tags.includes(_.id))
+      ]);
+      setInitialTagsFromCardProcessed(true);
     }
-  }, [card.id, cachedTagsData]);
-
-  const {
-    data: cachedCardPartials,
-    refetch: refetchCardPartials,
-    isLoading: isCardPartialsQueryLoading,
-    isFetched: isCardPartialsQueryLoaded
-  } = useQuery({
-    ...getCardPartialsForCardQueryOptions(authTokens.access, card.id!),
-    enabled: !!card.id
-  });
+  }, [card, cachedTagsData]);
 
   useEffect(() => {
     if (cachedCardPartials && cachedCardPartials.length > 0) {
@@ -170,30 +201,25 @@ export default function Edit() {
     }
   }, [cachedCardPartials]);
 
-  const createNewTagMutation = useMutation({
-    mutationFn: (
-      { accessToken, tagName }:
-      { accessToken: string; tagName: string; }
-    ) => (
-      createNewTag(accessToken, tagName)
-    )
-  });
-
   useEffect(() => {
-    if (selectedCardSeries) {
-      setCard({
-        ...card,
-        card_series: selectedCardSeries?.id
-      });
-  
-      fetchCardsFromSeries(selectedCardSeries!.id);
-    } else {
-      setCard({
-        ...card,
-        card_series: null
-      });
-
-      setCardsFromSeries([]);
+    if (card?.id) {
+      if (cachedCardData) {
+        if (selectedCardSeries) {
+          setCard({
+            ...card!,
+            card_series: selectedCardSeries.id
+          });
+      
+          fetchCardsFromSeries(selectedCardSeries.id);
+        } else {
+          setCard({
+            ...card!,
+            card_series: null
+          });
+    
+          setCardsFromSeries([]);
+        }
+      }
     }
   }, [selectedCardSeries]);
 
@@ -201,7 +227,7 @@ export default function Edit() {
     setIsCardsFromSeriesLoading(true);
 
     try {
-      const response = await api.get(
+      const response = await api.get<Array<Card>>(
         `api/cards/cards/get_cards_from_series/?series=${seriesId}`,
         {
           headers: {
@@ -210,9 +236,9 @@ export default function Edit() {
           withCredentials: true
         }
       );
-      if (!response.data.find((_) => _.id === card.id)) {
+      if (!response.data.find((_) => _.id === card!.id)) {
         const updatedCard = {
-          ...card,
+          ...card!,
           card_series: seriesId,
           n_in_series: response.data.length + 1
         }
@@ -232,65 +258,29 @@ export default function Edit() {
   };
 
   useEffect(() => {
-    if (!selectedCardSeries) {
+    if (card?.id && !selectedCardSeries) {
       setCard({
-        ...card,
+        ...card!,
         n_in_series: 1
       });
     }
   }, [cardsFromSeries]);
 
-  function handleCreateTag(item: ItemDataType) {
-    createNewTagMutation.mutate({
-      accessToken: authTokens.access,
-      tagName: item.label as string
-    }, {
-      onSuccess(responseData: Tag) {
+  useEffect(() => {
+    if (card?.id) {
+      if (selectedTags) {
         setCard({
-          ...card,
-          tags: [...(card.tags ? card.tags : []), responseData.id],
-          tagsNames: [
-            ...(card.tagsNames ? card.tagsNames : []),
-            responseData.name
-          ]
+          ...card!,
+          tags: selectedTags.map((_) => _.id)
         });
-        const tagsMap: Record<number, Tag> = {};
-        Object.values(tags).map((__) => (
-          tagsMap[__.id] = { ...__ }
-        ));
-        tagsMap[responseData.id] = { ...responseData };
-        setTags(tagsMap);
+      } else {
+        setCard({
+          ...card!,
+          tags: []
+        });
       }
-    });
-  }
-
-  function handleRemoveTag(value: string) {
-    const tagId = Object.values(tags).find((_) => _.name === value)?.id;
-    setCard({
-      ...card,
-      tags: [...card.tags!.filter((_) => _ !== tagId)],
-      tagsNames: [...card.tagsNames!.filter((_) => _ !== value)]
-    });
-  }
-
-  async function handlePickTags(value: Array<string>) {
-    const newTags = Object.values(tags)
-      .filter((_) => (
-        value.includes(_.name)
-      ))
-      .map((_) => (
-        {
-          id: _.id,
-          name: _.name
-        }
-      ));
-
-    setCard({
-      ...card,
-      tags: newTags.map((_) => _.id),
-      tagsNames: newTags.map((_) => _.name)
-    });
-  }
+    }
+  }, [selectedTags]);
 
   function addPartial(index: number, type: string) {
     cardPartials.splice(index, 0, {
@@ -302,136 +292,98 @@ export default function Edit() {
         type,
         children: [{ text: '' }]
       }],
-      card: card.id
+      card: card!.id
     });
-    setCardPartials(cardPartials.map((_) => (
-      { ..._ }
+    setCardPartials(cardPartials.map((_, i) => (
+      {
+        ..._,
+        position: i + 1
+      }
     )));
+    setActivePartial(null);
   }
 
   async function saveChanges() {
-    setIsCardSaving(true);
-
     // save card metadata
-    try {
-      await api.patch(
-        `api/cards/cards/${card.id}/`,
-        { ...card },
-        {
-          headers: {
-            Authorization: `JWT ${authTokens.access}`,
-            'X-CSRFToken': document.cookie.replace(
-              /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-            )
-          },
-          withCredentials: true
-        }
-      );
-    } catch (error: any) {
-      if (!error.response) {
-        console.error(error.message);
-      }
-    } finally {
-      if (cardPartials.length === 0) {
-        setIsCardSaving(false);
-        navigate('/list');
-      }
-    }
-
-    if (isCardInSeriesOrderChanged) {
-      // save card order in series
-      try {
-        await api.post(
-          `api/cards/cards/reorder_cards_in_series/`,
-          { cards_from_series: cardsFromSeries },
-          {
-            headers: {
-              Authorization: `JWT ${authTokens.access}`,
-              'X-CSRFToken': document.cookie.replace(
-                /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-              )
-            },
-            withCredentials: true
-          }
-        );
-      } catch (error: any) {
-        if (!error.response) {
-          console.error(error.message);
-        }
-      }
-    }
-
-    // save partials
-    cardPartials.forEach(async (_, i) => {
-      if (!_.id) {
-        try {
-          await api.post(
-            'api/cards/card-partials/',
-            {
-              ..._,
-              position: i + 1
-            },
-            {
-              headers: {
-                Authorization: `JWT ${authTokens.access}`,
-                'X-CSRFToken': document.cookie.replace(
-                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-                )
-              },
-              withCredentials: true
-            }
-          );
-        } catch (error: any) {
-          if (!error.response) {
-            console.error(error.message);
-          }
-        } finally {
-          if (i === cardPartials.length - 1) {
-            setIsCardSaving(false);
-            navigate('/list');
-          }
-        }
-      } else {
-        try {
-          await api.patch(
-            `api/cards/card-partials/${_.id}/`,
-            {
-              ..._,
-              position: i + 1
-            },
-            {
-              headers: {
-                Authorization: `JWT ${authTokens.access}`,
-                'X-CSRFToken': document.cookie.replace(
-                  /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-                )
-              },
-              withCredentials: true
-            }
-          );
-          partialsToDeleteIds.forEach(async (_) => {
-            await api.delete(
-              `api/cards/card-partials/${_}/`,
-              {
-                headers: {
-                  Authorization: `JWT ${authTokens.access}`,
-                  'X-CSRFToken': document.cookie.replace(
-                    /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
-                  )
-                },
-                withCredentials: true
-              }
-            );
+    updateCardMutation({
+      accessToken: authTokens.access,
+      cardId: card!.id,
+      cardData: card!
+    }, {
+      onSuccess: async () => {
+        if (isCardInSeriesOrderChanged) {
+          // save card order in series
+          reorderCardsInSeriesMutation({
+            accessToken: authTokens.access,
+            cardsFromSeries
           });
-        } catch (error: any) {
-          if (!error.response) {
-            console.error(error.message);
-          }
-        } finally {
-          if (i === cardPartials.length - 1) {
-            setIsCardSaving(false);
-            navigate('/list');
-          }
+        }
+
+        if (cardPartials.length === 0) {
+          // we are getting redirected to the list section
+          // we're gonna need to refetch all cards
+          // we don't have any partials -> no need to refetch that
+          await queryClient.invalidateQueries({
+            queryKey: ['cards']
+          });
+          navigate('/list');
+        } else {
+          // save partials
+          cardPartials.forEach(async (_, i) => {
+            if (!_.id) {
+              createNewCardPartialMutation({
+                accessToken: authTokens.access,
+                cardPartialData: {
+                  ..._,
+                  position: i + 1
+                }
+              }, {
+                onSuccess: async () => {
+                  if (i === cardPartials.length - 1) {
+                    // we are getting redirected to the list section
+                    // we're gonna need to refetch all cards and partials
+                    await queryClient.invalidateQueries({
+                      queryKey: ['cards']
+                    });
+                    await queryClient.invalidateQueries({
+                      queryKey: ['card_partials']
+                    });
+                    navigate('/list');
+                  }
+                }
+              });
+            } else {
+              updateCardPartialMutation({
+                accessToken: authTokens.access,
+                cardPartialId: _.id,
+                cardPartialData: {
+                  ..._,
+                  position: i + 1
+                }
+              }, {
+                onSuccess: async () => {
+                  partialsToDeleteIds.forEach(async (_) => {
+                    deleteCardPartialMutation({
+                      accessToken: authTokens.access,
+                      cardPartialId: _
+                    });
+                  });
+
+                  if (i === cardPartials.length - 1) {
+                    // we are getting redirected to the list section
+                    // we're gonna need to refetch all cards and partials
+                    await queryClient.invalidateQueries({
+                      queryKey: ['cards']
+                    });
+                    await queryClient.invalidateQueries({
+                      queryKey: ['card_partials']
+                    });
+                    navigate('/list');
+                  }
+                }
+              });
+            }
+          });
         }
       }
     });
@@ -524,11 +476,14 @@ export default function Edit() {
       {(
         isCardQueryLoading
         || isTagsQueryLoading
-      ) && <p>Loading...</p>}
+      ) && <p className="mt-2 ml-8 text-white text-lg">Loading...</p>}
+      {isCardSaving
+        && <p className="mt-2 ml-8 text-white text-lg">Saving...</p>}
       {(
         isCardQueryLoaded
         && isTagsQueryLoaded
-        && card.tagsNames
+        && !isCardSaving
+        && card
       ) && (
         <>
           <div
@@ -559,7 +514,9 @@ export default function Edit() {
               cardSeries={cachedCardSeriesData ?? []}
               disabled={isCardSeriesQueryLoading}
               placeForReorderBtn={
-                !!selectedCardSeries && cardsFromSeries.length > 1
+                !!selectedCardSeries
+                  && cardsFromSeries.length > 1
+                  && !isCardsFromSeriesLoading
               }
               onSave={(cardSeries: CardSeries) => {
                 setSelectedCardSeries(cardSeries);
@@ -567,7 +524,7 @@ export default function Edit() {
               }}
               onClearSeries={() => setSelectedCardSeries(null)}
             />
-            <DialogReorderCardsInSeries
+            {!isCardsFromSeriesLoading && <DialogReorderCardsInSeries
               series={selectedCardSeries!}
               cardsFromSeries={cardsFromSeries}
               onSave={(value) => {
@@ -575,29 +532,29 @@ export default function Edit() {
                 setIsCardInSeriesOrderChanged(true);
               }}
             >
-            </DialogReorderCardsInSeries>
+            </DialogReorderCardsInSeries>}
           </div>
-          <div
-            id="tag-picker"
-            onClick={() => setActivePartial(null)}
-          >
-            <label
-              className="mx-3 text-white font-base font-semibold text-lg"
-            >Tags:</label>
-            <TagPicker
-              creatable
-              locale={{ createOption: 'New tag: {0}' }}
-              data={tagPickerData}
-              style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-              value={card.tagsNames}
-              onCreate={(value, item, event) => handleCreateTag(item)}
-              onSelect={handlePickTags}
-              onTagRemove={handleRemoveTag}
+          <div className="my-2">
+            <DialogEditTags
+              onlySelect={true}
+              selectedTags={selectedTags}
+              tags={cachedTagsData!}
+              disabled={isTagsQueryLoading}
+              onCreateNewTag={(createdTag: Tag, selectedTags: Array<Tag>) => {
+                setSelectedTags([
+                  ...selectedTags,
+                  createdTag
+                ]);
+                refetchTags();
+              }}
+              onSave={(tags: Array<Tag>) => setSelectedTags(tags)}
+              onClearTags={() => setSelectedTags([])}
             />
           </div>
           
           <div>
-            {isCardPartialsQueryLoading && <p>Loading...</p>}
+            {isCardPartialsQueryLoading
+              && <p className="mt-2 ml-8 text-white text-lg">Loading...</p>}
             {isCardPartialsQueryLoaded && (
               <div className="flex flex-col border-t-2 border-black">
                 {cardPartials!.map((_, partialIndex) => (
