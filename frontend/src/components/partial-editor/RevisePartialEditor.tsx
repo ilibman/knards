@@ -1,10 +1,27 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { createEditor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import './RevisePartialEditor.scss';
 
 export default function RevisePartialEditor({ ...props }) {
   const [editor] = useState(() => withReact(createEditor()));
+
+  // workaround to plop single whitespace everywhere,
+  //    where there's empty content child
+  // in attempt to overcome a bug on mobile
+  //    when an empty partial starts being glitchy
+  const contentFormat = (_) => {
+    if (_.type === 'text' && _.children.length === 1 && _.children[0].text === '') {
+      return {
+        children: [{
+          text: ' '
+        }],
+        type: 'text'
+      }
+    } else {
+      return _;
+    }
+  }
 
   const renderElement = useCallback((props) => {
     switch (props.element.type) {
@@ -106,7 +123,7 @@ export default function RevisePartialEditor({ ...props }) {
           && (
             <Slate
               editor={editor}
-              initialValue={props.content}
+              initialValue={props.content.map(contentFormat)}
             >
               <Editable
                 className={`flex-1 p-4 shadow-md

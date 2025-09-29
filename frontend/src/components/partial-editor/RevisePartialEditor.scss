@@ -39,6 +39,7 @@
   
   span.inset-question {
     position: relative;
+    top: -2px;
 
     display: inline-block;
     margin: 0 4px;
@@ -48,6 +49,7 @@
     color: var(--color-inset-question-text);
     font-weight: 600;
     line-height: 1.4;
+    vertical-align: middle;
   
     background-color: var(--color-inset-question-fill);
     border: 2px solid var(--color-inset-question-border);
