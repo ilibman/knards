@@ -19,7 +19,11 @@ export default {
         light: 'var(--color-blue-light)'
       },
       yellow: 'var(--color-yellow)',
-      red: 'var(--color-red)',
+      red: {
+        DEFAULT: 'var(--color-red)',
+        light: 'var(--color-red-light)',
+        dark: 'var(--color-red-dark)',
+      },
     },
     extend: {
       fontFamily: {
