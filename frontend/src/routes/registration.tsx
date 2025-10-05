@@ -106,7 +106,7 @@ export default function Registration() {
         <div className="h-screen flex flex-col justify-center">
           <div className="flex flex-col justify-start
               w-full max-w-[420px] mx-auto p-4
-              border-2 border-black">
+              bg-brown-light border-2 border-black">
             <h1 className="text-xl font-bold text-center">Success!</h1>
             <p className="text-center">
               <Link
@@ -122,7 +122,7 @@ export default function Registration() {
         <div className="h-screen flex flex-col justify-center">
           <div className="flex flex-col justify-start
             w-full max-w-[420px] mx-auto p-4
-            border-2 border-black">
+            bg-brown-light border-2 border-black">
             <p
               ref={errorRef}
               className={`mb-2 p-2 text-red-dark font-bold bg-red-light
