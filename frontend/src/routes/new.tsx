@@ -8,6 +8,7 @@ import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
 import useAuth from '../context/AuthProvider';
 import {
+  queryClient,
   getCardSeriesQueryOptions,
   getTagsQueryOptions,
   createNewCard,
@@ -112,10 +113,16 @@ export default function New() {
       accessToken: authTokens.access,
       cardData: cardToSave
     }, {
-      onSuccess(responseData: Card) {
+      onSuccess: async (responseData: Card) => {
         setCard(responseData);
 
         if (cardPartials.length === 0) {
+          await queryClient.invalidateQueries({
+            queryKey: ['cards']
+          });
+          await queryClient.invalidateQueries({
+            queryKey: ['card_partials']
+          });
           setCard({});
         }
       }
@@ -134,8 +141,14 @@ export default function New() {
             position: i + 1
           }
         }, {
-          onSuccess() {
+          onSuccess: async () => {
             if (i === cardPartials.length - 1) {
+              await queryClient.invalidateQueries({
+                queryKey: ['cards']
+              });
+              await queryClient.invalidateQueries({
+                queryKey: ['card_partials']
+              });
               setCard({});
               setCardPartials([]);
             }
