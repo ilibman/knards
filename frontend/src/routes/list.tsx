@@ -193,12 +193,12 @@ export default function List() {
   return (
     <>
       {(
-        isCardsQueryLoading
+        (isCardsQueryLoading && !isFetchingNextPage)
         || isTagsQueryLoading
         || isCardPartialsQueryLoading
       ) && <p className="mt-2 ml-8 text-white text-lg">Loading...</p>}
       {(
-        !isCardsQueryLoading
+        (!isCardsQueryLoading || isFetchingNextPage)
         && !isTagsQueryLoading
         && !isCardPartialsQueryLoading
       ) && (
