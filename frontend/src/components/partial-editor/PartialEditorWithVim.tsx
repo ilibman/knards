@@ -1,8 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
-import { createEditor, Editor, Transforms, Node } from 'slate';
+import { createEditor, Editor, Transforms } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { FaExclamation } from 'react-icons/fa';
 import { IoMdTrash } from 'react-icons/io'
+import {
+  moveToNextWS,
+  moveToPrevWS,
+  onlyWhitespaceToLineStart,
+  moveToNearestChar,
+  moveForwardOutOfWhitespace
+} from './vimHelpers';
 import './PartialEditor.scss';
 
 export default function PartialEditorWithVim({ ...props }) {
@@ -67,13 +74,38 @@ export default function PartialEditorWithVim({ ...props }) {
           setCommandPrefix('');
         }
         if (commandPrefix === '') {
-          Transforms.move(editor, { distance: 2, unit: 'word' });
-          Transforms.move(editor, { unit: 'word', reverse: true });
+          // Transforms.move(editor, { distance: 2, unit: 'word' });
+          // Transforms.move(editor, { unit: 'word', reverse: true });
+          moveToNextWS(editor);
         }
       }
       if (value.key === 'b') {
-        Transforms.move(editor, { unit: 'word', reverse: true });
+        // Transforms.move(editor, { unit: 'word', reverse: true });
+        const offset = editor.selection.focus.offset;
+        if (offset === 0) {
+          Transforms.move(editor, { distance: 1, unit: 'character', reverse: true });
+        } else if (onlyWhitespaceToLineStart(editor)) {
+          Transforms.move(editor, { distance: 2, unit: 'line', reverse: true });
+        } else {
+          moveToPrevWS(editor);
+        }
         setCommandPrefix('');
+      }
+      if (commandPrefix === 'f') {
+        moveToNearestChar(editor, value.key, 'forward');
+        setCommandPrefix('');
+        return;
+      }
+      if (value.key === 'f') {
+        setCommandPrefix('f');
+      }
+      if (commandPrefix === 'F') {
+        moveToNearestChar(editor, value.key, 'backward');
+        setCommandPrefix('');
+        return;
+      }
+      if (value.key === 'F') {
+        setCommandPrefix('F');
       }
       if (value.key === 'l') {
         Transforms.move(editor, { unit: 'character' });
@@ -161,6 +193,7 @@ export default function PartialEditorWithVim({ ...props }) {
       }
       if (value.shiftKey && value.key === 'I') {
         Transforms.move(editor, { unit: 'line', reverse: true });
+        moveForwardOutOfWhitespace(editor);
         setIsInsertMode(true);
         setCommandPrefix('');
       }
