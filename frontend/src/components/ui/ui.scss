@@ -1,0 +1,33 @@
+.kn-checkbox {
+  border: 2px solid var(--color-black);
+  border-radius: var(--border-radius);
+  background-color: var(--color-options-unselected-background);
+  box-shadow: 0 2px 2px -1px var(--color-input-shadow);
+
+  &:hover, &:active, &:focus {
+    border: 2px solid var(--color-active-partial-border);
+    box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
+  }
+}
+
+.kn-checkbox-input:checked + .kn-checkbox {
+  background-color: var(--color-options-selected-background);
+}
+
+.kn-checkbox::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 8px;
+  height: 12px;
+
+  border: solid var(--color-black);
+  border-width: 0 3px 3px 0;
+  opacity: 0;
+  transform: rotate(45deg);
+}
+
+.kn-checkbox-input:checked + .kn-checkbox::after {
+  opacity: 1;
+}

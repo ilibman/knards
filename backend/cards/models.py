@@ -55,6 +55,11 @@ class Card(models.Model):
         null=True
     )
     tags = models.ManyToManyField(Tag, blank=True)
+    is_private = models.BooleanField(
+        default=False,
+        blank=False,
+        null=False
+    )
     owner = models.ForeignKey(
         get_user_model(),
         blank=True,

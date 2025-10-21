@@ -28,6 +28,7 @@ import {
   Tag,
   CardPartial
 } from '../models';
+import Checkbox from '../components/ui/Checkbox';
 import PartialEditor from '../components/partial-editor/PartialEditor';
 import PartialEditorWithVim
   from '../components/partial-editor/PartialEditorWithVim';
@@ -534,7 +535,7 @@ export default function Edit() {
             >
             </DialogReorderCardsInSeries>}
           </div>
-          <div className="my-2">
+          <div className="mt-2">
             <DialogEditTags
               onlySelect={true}
               selectedTags={selectedTags}
@@ -549,6 +550,19 @@ export default function Edit() {
               }}
               onSave={(tags: Array<Tag>) => setSelectedTags(tags)}
               onClearTags={() => setSelectedTags([])}
+            />
+          </div>
+          <div className="relative my-2 ml-2.5">
+            <Checkbox
+              classForLabel={'text-white font-base font-semibold text-lg'}
+              propertyTitle="private"
+              propertyValue={card.is_private}
+              onChecked={(newValue: boolean) => (
+                setCard({
+                  ...card,
+                  is_private: newValue
+                })
+              )}
             />
           </div>
           
