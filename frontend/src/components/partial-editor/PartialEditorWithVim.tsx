@@ -8,7 +8,9 @@ import {
   moveToPrevWS,
   onlyWhitespaceToLineStart,
   moveToNearestChar,
-  moveForwardOutOfWhitespace
+  moveForwardOutOfWhitespace,
+  deleteCurrentLine,
+  autoIndentLine
 } from './vimHelpers';
 import './PartialEditor.scss';
 
@@ -62,6 +64,20 @@ export default function PartialEditorWithVim({ ...props }) {
       if (value.shiftKey && value.key === 'C') {
         Transforms.delete(editor, { unit: 'line' });
         setIsInsertMode(true);
+      }
+
+      if (commandPrefix === 'd') {
+        if (value.key === 'd') {
+          deleteCurrentLine(editor);
+          setCommandPrefix('');
+          return;
+        } else {
+          setCommandPrefix('');
+          return;
+        }
+      }
+      if (value.key === 'd') {
+        setCommandPrefix('d');
       }
 
       if (value.key === 'c') {
@@ -189,6 +205,7 @@ export default function PartialEditorWithVim({ ...props }) {
       }
       if (value.shiftKey && value.key === 'H') {
         Transforms.move(editor, { unit: 'line', reverse: true });
+        moveForwardOutOfWhitespace(editor);
         setCommandPrefix('');
       }
       if (value.shiftKey && value.key === 'I') {
@@ -209,6 +226,7 @@ export default function PartialEditorWithVim({ ...props }) {
           editor,
           { type: 'vim', children: [{ text: '' }] }
         );
+        autoIndentLine(editor);
         setIsInsertMode(true);
         setCommandPrefix('');
       }
@@ -218,6 +236,7 @@ export default function PartialEditorWithVim({ ...props }) {
           editor,
           { type: 'vim', children: [{ text: '' }] }
         );
+        autoIndentLine(editor);
         setIsInsertMode(true);
         setCommandPrefix('');
       }

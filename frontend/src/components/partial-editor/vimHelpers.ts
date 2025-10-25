@@ -1,4 +1,4 @@
-import { Editor, Range, Transforms, Point } from 'slate';
+import { Editor, Range, Transforms, Point, Path } from 'slate';
 
 function lineStart(editor: Editor, p: Point): Point {
   const entry = Editor.above(
@@ -268,4 +268,135 @@ export function moveForwardOutOfWhitespace(editor: Editor) {
 
   // If we consumed to the end of the doc and found no non-WS, leave caret at doc end.
   Transforms.select(editor, p);
+}
+
+// delete the entire line that the cursor is currently on
+export function deleteCurrentLine(editor: Editor) {
+  if (!editor.selection || !Range.isCollapsed(editor.selection)) {
+    return; // only handle when cursor is collapsed
+  }
+
+  // find the nearest block node above the cursor
+  const blockEntry = Editor.above(editor, {
+    match: n => Editor.isBlock(editor, n),
+    mode: 'lowest',
+  });
+
+  if (!blockEntry) {
+    return;
+  }
+
+  const [, blockPath] = blockEntry;
+
+  // get parent node (usually editor root)
+  const parentPath = Path.parent(blockPath);
+  const [parentNode] = Editor.node(editor, parentPath);
+
+  // determine if this is the only child in parent
+  const isOnlyNode = parentNode.children.length === 1;
+
+  if (isOnlyNode) {
+    // only block in the editor → clear its text instead of deleting
+    Transforms.delete(editor, {
+      at: Editor.range(editor, blockPath),
+    });
+    // move cursor to start
+    Transforms.select(editor, Editor.start(editor, blockPath));
+  } else {
+    // normal case → delete the block
+    Transforms.delete(editor, { at: blockPath });
+
+    // move cursor to the beginning of the next line
+    moveForwardOutOfWhitespace(editor);
+    if (isCurrentLineLast(editor)) {
+      Transforms.move(editor, { unit: 'line', reverse: true });
+      moveForwardOutOfWhitespace(editor);
+    }
+  }
+}
+
+// check if the current line is the last line
+export function isCurrentLineLast(editor: Editor) {
+  if (!editor.selection) {
+    return false;
+  }
+
+  // find the current block entry
+  const blockEntry = Editor.above(editor, {
+    match: n => Editor.isBlock(editor, n),
+    mode: 'lowest',
+  });
+
+  if (!blockEntry) {
+    return false;
+  }
+
+  const [, blockPath] = blockEntry;
+
+  // get parent path
+  const parentPath = Path.parent(blockPath);
+
+  // get parent node using Editor.node (returns [node, path])
+  const [parentNode] = Editor.node(editor, parentPath);
+
+  if (!parentNode || !parentNode.children) {
+    return false;
+  }
+
+  // compare the index of the current block with the last child index
+  const lastIndex = parentNode.children.length - 1;
+
+  return blockPath[blockPath.length - 1] === lastIndex;
+}
+
+// automatically adds indentation to the current line based on surrounding lines.
+ export function autoIndentLine(editor) {
+  if (!editor.selection) {
+    return;
+  }
+
+  // find the current block (line)
+  const currentEntry = Editor.above(editor, {
+    match: n => Editor.isBlock(editor, n),
+    mode: 'lowest',
+  });
+
+  if (!currentEntry) {
+    return;
+  }
+  const [currentBlock, currentPath] = currentEntry;
+
+  const parentPath = Path.parent(currentPath);
+  const parentEntry = Editor.node(editor, parentPath);
+  if (!parentEntry) {
+    return;
+  }
+  const [parentNode] = parentEntry;
+
+  const currentIndex = currentPath[currentPath.length - 1];
+
+  // get previous and next sibling blocks
+  const prevBlock = parentNode.children[currentIndex - 1];
+  const nextBlock = parentNode.children[currentIndex + 1];
+
+  // function to get leading whitespace count
+  const leadingWS = (textNode) => {
+    if (!textNode || !textNode.text) {
+      return 0;
+    }
+    const match = textNode.text.match(/^\s*/);
+    return match ? match[0].length : 0;
+  };
+
+  // compute indentation based on prev and next blocks
+  const prevIndent = prevBlock?.children?.[0] ? leadingWS(prevBlock.children[0]) : 0;
+  const nextIndent = nextBlock?.children?.[0] ? leadingWS(nextBlock.children[0]) : 0;
+
+  const indent = Math.max(prevIndent, nextIndent);
+  if (indent === 0) {
+    return;
+  }
+
+  // insert leading spaces at the start of the current block
+  Transforms.insertText(editor, ' '.repeat(indent), { at: Editor.start(editor, currentPath) });
 }
