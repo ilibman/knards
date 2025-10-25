@@ -1,5 +1,5 @@
 import datetime, pytz, math, random
-from collections import defaultdict
+from collections import defaultdict, Counter
 from django.db.models import Q
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
@@ -144,6 +144,30 @@ class CardsViewSet(viewsets.ModelViewSet):
                 cards_total_by_tags[card.tags_set_str]['to_revise'] += (
                     1 if eligible_for_revision else 0
                 )
+        
+        global_tag_strs = {}
+        
+        # count how many times each tag appears throughout the key-value pairs
+        tag_counts = Counter(
+            tag.strip()
+            for key in cards_total_by_tags
+            for tag in key.split(',')
+        )
+
+        for key, values in cards_total_by_tags.items():
+            tags = [t.strip() for t in key.split(',')]
+            for tag in tags:
+                # only aggregate tags that appear in multiple keys
+                if tag_counts[tag] > 1:
+                    if tag not in global_tag_strs:
+                        global_tag_strs[tag] = {'total': 0, 'to_revise': 0}
+                    global_tag_strs[tag]['total'] += values.get('total', 0)
+                    global_tag_strs[tag]['to_revise'] \
+                        += values.get('to_revise', 0)
+        
+        cards_total_by_tags.update(global_tag_strs)
+        cards_total_by_tags \
+            = {k: cards_total_by_tags[k] for k in sorted(cards_total_by_tags)}
 
         for card in modified_cardset:
             if card['series_id']:
