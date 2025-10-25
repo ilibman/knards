@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-  Input,
-  InputGroup,
-} from 'rsuite';
 import { FaCode, FaCheck } from 'react-icons/fa';
 import { IoText } from 'react-icons/io5';
+import { RxCross2 } from 'react-icons/rx';
+
 import useAuth from '../context/AuthProvider';
 import {
   queryClient,
@@ -237,25 +235,35 @@ export default function New() {
         <>
           <div
             className="mt-2"
-            id="title"
             onClick={() => setActivePartial(null)}
           >
             <label
               className="mx-3 text-white font-base font-semibold text-lg"
             >Title:</label>
-            <InputGroup
-              inside
-              style={{ width: 'calc(100% - 20px)', margin: '0px 10px 10px 10px' }}
+            <div
+              className="relative w-[calc(100% - 1.25rem)] h-[44px] mx-2.5"
             >
-              <Input
+              <input
+                className="w-full h-full pl-3 text-white text-lg bg-brown-light
+                  kn-base-input"
                 spellCheck={false}
-                value={card.title ?? ''}
-                onChange={e => setCard({
-                  ...card,
-                  title: e
-                })}
+                value={card.title ?? ''} 
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => (
+                  setCard({
+                    ...card,
+                    title: event.target.value
+                  })
+                )}
               />
-            </InputGroup>
+              {card.title && <div
+                className="absolute top-0 right-0
+                  flex justify-center items-center h-[44px] w-[40px] mr-0.5
+                  kn-picker-clear-btn"
+                onClick={() => setCard({ ...card, title: '' })}
+              >
+                <RxCross2 className="stroke-black stroke-[1.5]" />
+              </div>}
+            </div>
           </div>
           <div className="relative mt-2">
             <DialogEditSeries
