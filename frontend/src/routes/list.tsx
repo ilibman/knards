@@ -2,13 +2,6 @@ import { useState, useEffect } from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
-import {
-  Input,
-  InputGroup,
-  Radio,
-  RadioGroup
-} from 'rsuite';
-import SearchIcon from '@rsuite/icons/Search';
 
 import useAuth from '../context/AuthProvider';
 import { useIntersection } from '../hooks';
@@ -23,6 +16,7 @@ import {
   Tag,
   CardPartial
 } from '../models';
+import RadioboxGroup from '../components/ui/RadioboxGroup';
 import ListStatsAndRevise from '../components/ListStatsAndRevise';
 import DialogEditSeries from '../components/dialogs/DialogEditSeries';
 import DialogEditTags from '../components/dialogs/DialogEditTags';
@@ -35,6 +29,13 @@ export default function List() {
     tagInclusion?: string;
     fulltext?: string;
   }>({});
+  const [tagInclusionParam, setTagInclusionParam] = useState<{
+    'or': boolean;
+    'and': boolean;
+  }>({
+    'or': false,
+    'and': false
+  });
 
   const [cardSeriesMap, setCardSeriesMap]
     = useState<Record<number, CardSeries>>({});
@@ -165,17 +166,6 @@ export default function List() {
     setParams({ ...params });
   }
 
-  function handleFulltextChange(event: React.ChangeEvent<HTMLInputElement>) {
-    if (event.target.value === '') {
-      delete params.fulltext;
-      setParams({ ...params });
-      return false;
-    }
-      
-    params.fulltext = `fulltext=${event.target.value}`
-    setParams({ ...params });
-  }
-
   function renderPartialText(
     content: Array<{
       children: Array<{ text: string; insetQuestion: boolean; }>;
@@ -239,36 +229,31 @@ export default function List() {
               }}
             />
           </div>
-          <div>
-            <RadioGroup
-              name="tagInclusionSetting"
-              inline
-              style={{ width: 'calc(100% - 20px)', margin: '0 10px' }}
-              onChange={(value) => {
-                handleTagInclusionSettingChange(String(value))
+          <div className="relative my-2 ml-2.5">
+            <RadioboxGroup
+              classForLabels={'text-white font-base font-semibold text-lg'}
+              vertical={false}
+              properties={[
+                {
+                  title: 'Or',
+                  value: tagInclusionParam['or']
+                },
+                {
+                  title: 'And',
+                  value: tagInclusionParam['and']
+                }
+              ]}
+              onSelected={(newValues: Array<boolean>) => {
+                setTagInclusionParam({
+                  'or': newValues[0],
+                  'and': newValues[1]
+                });
+                params.tagInclusion
+                  = `tag_inclusion=${newValues[0] ? 'or' : 'and'}`;
+                setParams({ ...params });
               }}
-            >
-              <Radio className="text-lg" checked value="or">OR</Radio>
-              <Radio className="text-lg" value="and">AND</Radio>
-            </RadioGroup>
+            />
           </div>
-          {false && (
-            <div id="fulltext-search">
-              <label
-                className="mx-3 text-white font-base font-semibold text-lg"
-              >Fulltext:</label>
-              <InputGroup
-                inside
-                style={{ width: 'calc(100% - 20px)', margin: '4px 10px 10px 10px' }}
-                onChange={handleFulltextChange}
-              >
-                <Input />
-                <InputGroup.Button>
-                  <SearchIcon />
-                </InputGroup.Button>
-              </InputGroup>
-            </div>
-          )}
           <ListStatsAndRevise queryParams={params}>
           </ListStatsAndRevise>
           <div>
