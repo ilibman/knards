@@ -161,11 +161,6 @@ export default function List() {
     }
   }, [selectedTags]);
 
-  function handleTagInclusionSettingChange(value: string) {
-    params.tagInclusion = `tag_inclusion=${value}`;
-    setParams({ ...params });
-  }
-
   function renderPartialText(
     content: Array<{
       children: Array<{ text: string; insetQuestion: boolean; }>;
