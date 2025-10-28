@@ -125,6 +125,7 @@ export default function Revise() {
               setActivePartial([0, 0]);
             }, 100);
           }
+          return;
         }
       }
       event.preventDefault();
