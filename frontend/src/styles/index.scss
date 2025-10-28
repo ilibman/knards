@@ -99,6 +99,8 @@ h6 {
   border-radius: var(--border-radius);
   box-shadow: 0 2px 2px -1px var(--color-input-shadow);
 
+  outline: none;
+
   &:hover, &:active, &:focus {
     border: 2px solid var(--color-active-partial-border);
     box-shadow: 0 2px 2px -1px var(--color-input-shadow-active);
@@ -120,7 +122,6 @@ h6 {
   @extend .kn-base-control-element;
 
   cursor: text;
-  outline: none;
 }
 
 .kn-btn-disabled {

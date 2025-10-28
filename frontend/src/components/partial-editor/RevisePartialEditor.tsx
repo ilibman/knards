@@ -98,7 +98,7 @@ export default function RevisePartialEditor({ ...props }) {
               className={`w-full p-4 bg-brown-light shadow-md outline-none
                 ${props.readOnly ? '!bg-green' : '!bg-brown-light'}
                 ${props.isActivePartial ? 'active-partial' : 'inactive-partial'}
-                revise-partial-editor inactive-partial`}
+                revise-partial-editor`}
             >{renderPartialWithInsetQuestions(props.content)}</div>
           )
         }
@@ -144,6 +144,7 @@ export default function RevisePartialEditor({ ...props }) {
               ? 'inset-question'
               : ''}
           `}
+          tabIndex={0}
         >
           {props.children}
         </span>

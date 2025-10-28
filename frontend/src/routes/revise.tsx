@@ -24,7 +24,10 @@ export default function Revise() {
       ? JSON.parse(localStorage.getItem('cardset'))
       : null
   ));
-  const [activePartial, setActivePartial] = useState([null, null]);
+  const [activePartial, setActivePartial]
+    = useState<Array<number | null>>([null, null]);
+  const [activeInsetQuestionIndex, setActiveInsetQuestionIndex]
+    = useState<number>(0);
   const [cardPartials, setCardPartials] = useState<Array<CardPartial>>([]);
   const [reviseCardPartials, setReviseCardPartials]
     = useState<Array<CardPartial>>([]);
@@ -86,6 +89,124 @@ export default function Revise() {
   }
 
   useEffect(() => {
+    if (activePartial[0] === null) {
+      document.getElementById('check-answers-btn')?.focus();
+    } else {
+      const el = document.querySelector<HTMLDivElement>(
+        `#partial-${activePartial[0]} [contenteditable="true"]`
+      );
+      if (!el) { return; }
+      el.focus();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [activePartial]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.key !== 'Tab' && event.code !== 'Enter')
+        || event.isComposing) {
+        return;
+      }
+      if (document.activeElement instanceof HTMLElement) {
+        if (event.code === 'Enter') {
+          if (document.activeElement.id === 'check-answers-btn') {
+            document.activeElement.click();
+            document.activeElement.blur();
+          }
+          if (document.activeElement.id.startsWith('evaluation-btn-')) {
+            document.activeElement.click();
+            document.activeElement.blur();
+            setTimeout(() => {
+              setActivePartial([0, 0]);
+            }, 100);
+          }
+        }
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (isEvaluating) {
+        if (document.activeElement instanceof HTMLElement) {
+          for (let i = 1; i <= 4; i++) {
+            if (document.activeElement.id === `evaluation-btn-${i}`) {
+              if (i === 4) {
+                document.getElementById('evaluation-btn-1')?.focus();
+              } else {
+                document.getElementById(`evaluation-btn-${i + 1}`)?.focus();
+              }
+              break;
+            }
+          }
+        } else {
+          document.getElementById('evaluation-btn-1')?.focus();
+        }
+        return;
+      }
+
+      if (document.activeElement instanceof HTMLElement) {
+        if (document.activeElement?.classList.contains('inset-question')) {
+          const parentElement = document.activeElement!
+            .parentElement!.parentElement!.parentElement;
+          const insetQuestions
+            = parentElement?.getElementsByClassName('inset-question');
+          
+          setActiveInsetQuestionIndex((prev) => {
+            if (!insetQuestions![prev + 1]) {
+              setActivePartial((prev) => {
+                const [row, col] = prev;
+                
+                const nextRow = row! + 1 < cardPartials.length
+                  ? row! + 1
+                  : null;
+                return [nextRow, col];
+              });
+              return 0;
+            } else {
+              return prev + 1;
+            }
+          });
+        }
+      }
+      
+      if (!(document.activeElement instanceof HTMLElement)
+        || !document.activeElement?.classList.contains('inset-question')) {
+        setActivePartial((prev) => {
+          const [row, col] = prev;
+    
+          if (row == null) {
+            return [0, 0];
+          }
+          
+          const nextRow = row! + 1 < cardPartials.length ? row! + 1 : null;
+          return [nextRow, col];
+        });
+      }
+    };
+  
+    window.addEventListener('keydown', onKeyDown, { capture: true });
+    return () => (
+      window.removeEventListener('keydown', onKeyDown, { capture: true })
+    );
+  }, [cardPartials, isEvaluating]);
+
+  useEffect(() => {
+    if (activeInsetQuestionIndex !== 0) {
+      const parentElement = document.activeElement!
+        .parentElement!.parentElement!.parentElement;
+      const insetQuestions
+        = parentElement?.getElementsByClassName('inset-question');
+      
+      (insetQuestions![activeInsetQuestionIndex] as HTMLElement)
+        .focus();
+    }
+  }, [activeInsetQuestionIndex]);
+
+  useEffect(() => {
     if (cardset.length === 0) {
       navigate('/list');
     }
@@ -96,6 +217,9 @@ export default function Revise() {
   function handleCheckAnswers() {
     setIsRevising(false);
     setIsEvaluating(true);
+    setTimeout(() => {
+      document.getElementById('evaluation-btn-1')?.focus();
+    }, 0);
   }
 
   async function handleEvaluationClick(newScore: number) {
@@ -166,7 +290,7 @@ export default function Revise() {
       {isCardSaving && <p className="mt-2 ml-8 text-white text-lg">Saving...</p>}
       {!isLoading && !isCardSaving && (
         <div className="p-2.5 flex border-b-2 revision">
-          <div className="w-1/2 metadata-container">
+          <div className="w-full metadata-container lg:w-1/2">
             {cardset[0].title && (
               <p className="text-white text-lg font-base font-semibold">
                 Title: {cardset[0].title}
@@ -213,6 +337,9 @@ export default function Revise() {
                 className="col-span-2 max-h-[48px]
                   text-white text-lg font-base font-semibold bg-green
                   kn-base-btn min-[1440px]:w-[180px] min-[1440px]:mb-2.5"
+                id="check-answers-btn"
+                role="button"
+                tabIndex={0}
                 onClick={handleCheckAnswers}
               >
                 Check answers
@@ -224,6 +351,9 @@ export default function Revise() {
                   className="
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px] min-[1440px]:mb-2.5"
+                  id="evaluation-btn-1"
+                  role="button"
+                  tabIndex={1}
                   onClick={() => handleEvaluationClick(
                     getNewScore(cardset[0].score).upScore
                   )}
@@ -244,6 +374,9 @@ export default function Revise() {
                   className="
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px] min-[1440px]:mb-2.5"
+                  id="evaluation-btn-2"
+                  role="button"
+                  tabIndex={2}
                   onClick={() => handleEvaluationClick(
                     getNewScore(cardset[0].score).downScore
                   )}
@@ -264,6 +397,9 @@ export default function Revise() {
                   className="
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px] min-[1440px]:mb-2.5"
+                  id="evaluation-btn-3"
+                  role="button"
+                  tabIndex={3}
                   onClick={() => handleEvaluationClick(
                     getNewScore(cardset[0].score).downToOneThirdScore
                   )}
@@ -284,6 +420,9 @@ export default function Revise() {
                   className="
                     text-black text-lg font-base font-semibold bg-yellow
                     kn-base-btn min-[1440px]:w-[450px]"
+                  id="evaluation-btn-4"
+                  role="button"
+                  tabIndex={4}
                   onClick={() => handleEvaluationClick(
                     getNewScore(cardset[0].score).downToZeroScore
                   )}
@@ -322,6 +461,7 @@ export default function Revise() {
                 )
                   ? 'mr-2.5 w-full min-[1440px]:w-1/2'
                   : 'w-full'}`}
+                id={`partial-${i}`}
               >
                 {_.content[0].type !== 'vim' && (
                   <RevisePartialEditor
