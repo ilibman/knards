@@ -114,16 +114,10 @@ export default function Revise() {
       }
       if (document.activeElement instanceof HTMLElement) {
         if (event.code === 'Enter') {
-          if (document.activeElement.id === 'check-answers-btn') {
+          if (document.activeElement.id === 'check-answers-btn'
+            || document.activeElement.id.startsWith('evaluation-btn-')) {
             document.activeElement.click();
             document.activeElement.blur();
-          }
-          if (document.activeElement.id.startsWith('evaluation-btn-')) {
-            document.activeElement.click();
-            document.activeElement.blur();
-            setTimeout(() => {
-              setActivePartial([0, 0]);
-            }, 100);
           }
           return;
         }
