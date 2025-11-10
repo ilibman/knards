@@ -110,8 +110,10 @@ class CardsViewSet(viewsets.ModelViewSet):
 
         recommendations = {}
         for tags_set_str, obj in cards_total_by_tags.items():
-            if obj['total'] / obj['to_revise'] > 1:
-                recommendations[obj['total'] / obj['to_revise']] = tags_set_str
+            if obj['to_revise'] > 0:
+                if obj['total'] / obj['to_revise'] > 1:
+                    recommendations[obj['total'] / obj['to_revise']] \
+                        = tags_set_str
 
         return Response({
             'cards_total': cardset.count(),
