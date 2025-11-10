@@ -1,5 +1,96 @@
 import { Editor, Range, Transforms, Point, Path } from 'slate';
 
+const SEP = /[=+<>{}\[\]()"'`\/.,;:!?-]/;  // punctuation separators
+const WORD = /[A-Za-z0-9_]/;
+
+function classify(ch: string): "WS" | "WORD" | "SEP" {
+  if (/\s/.test(ch)) return "WS";
+  if (WORD.test(ch)) return "WORD";
+  return "SEP";
+}
+
+/** Move to the start of the next token (word or punctuation), Vim-like `w`. */
+export function nextWordStart(editor: Editor, p: Point): Point {
+  // Step at least one character forward
+  let cur = Editor.after(editor, p, { unit: "character" }) ?? p;
+  if (Point.equals(cur, p)) return p;
+
+  // Determine the type of the char we just stepped over
+  const prev = Editor.before(editor, cur, { unit: "character" });
+  const prevCh =
+    prev ? Editor.string(editor, { anchor: prev, focus: cur }) : "";
+  const prevType = prevCh ? classify(prevCh) : "WS";
+
+  // Consume the current run of the same type
+  while (true) {
+    const nxt = Editor.after(editor, cur, { unit: "character" });
+    if (!nxt) return cur;
+    const ch = Editor.string(editor, { anchor: cur, focus: nxt });
+    if (!ch) return cur; // across boundary
+    const t = classify(ch);
+    if (t !== prevType) {
+      // We reached the boundary between tokens.
+      // If boundary goes into whitespace, skip the whole WS run to the next token start.
+      if (t === "WS") {
+        let wsCur = nxt;
+        while (true) {
+          const nxt2 = Editor.after(editor, wsCur, { unit: "character" });
+          if (!nxt2) return wsCur;
+          const ch2 = Editor.string(editor, { anchor: wsCur, focus: nxt2 });
+          if (!ch2 || classify(ch2) !== "WS") return wsCur;
+          wsCur = nxt2;
+        }
+      }
+      // Otherwise the next token (WORD or SEP) starts at `cur`
+      return cur;
+    }
+    cur = nxt;
+  }
+}
+
+/** Move to the start of the previous token, Vim-like `b`. */
+export function prevWordStart(editor: Editor, p: Point): Point {
+  // Step at least one character backward
+  let cur = Editor.before(editor, p, { unit: "character" }) ?? p;
+  if (Point.equals(cur, p)) return p;
+
+  // Determine the type of the char we just stepped over
+  const next = Editor.after(editor, cur, { unit: "character" });
+  const nextCh =
+    next ? Editor.string(editor, { anchor: cur, focus: next }) : "";
+  const nextType = nextCh ? classify(nextCh) : "WS";
+
+  // If we’re currently in whitespace, skip all WS backward first
+  if (nextType === "WS") {
+    while (true) {
+      const prev = Editor.before(editor, cur, { unit: "character" });
+      if (!prev) break;
+      const ch = Editor.string(editor, { anchor: prev, focus: cur });
+      if (!ch || classify(ch) !== "WS") break;
+      cur = prev;
+    }
+  }
+
+  // Now consume the run (WORD or SEP) backward to its start
+  while (true) {
+    const prev = Editor.before(editor, cur, { unit: "character" });
+    if (!prev) return cur;
+    const ch = Editor.string(editor, { anchor: prev, focus: cur });
+    if (!ch) return cur;
+    const t = classify(ch);
+    if (t !== "WORD" && t !== "SEP") return cur; // hit WS
+    const nxtRight = Editor.after(editor, prev, { unit: "character" });
+    const chRight =
+      nxtRight ? Editor.string(editor, { anchor: prev, focus: nxtRight }) : "";
+    // If char to the left differs in class, we've reached the token start
+    const left = Editor.before(editor, prev, { unit: "character" });
+    const leftCh =
+      left ? Editor.string(editor, { anchor: left, focus: prev }) : "";
+    if (!leftCh || classify(leftCh) !== t) return prev;
+    cur = prev;
+  }
+}
+
 function lineStart(editor: Editor, p: Point): Point {
   const entry = Editor.above(
     editor,
