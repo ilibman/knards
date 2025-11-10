@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 
 import { AuthProvider} from '../context/AuthProvider';
@@ -9,6 +9,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 export default function Root() {
+  const { pathname } = useLocation();
   const { authTokens } = useAuth();
 
   const {
@@ -21,7 +22,7 @@ export default function Root() {
   return (
     <AuthProvider>
       <Header />
-      {!isHomeInfoLoading && (
+      {!isHomeInfoLoading && pathname === '/' && (
         <div className="my-3 mx-8">
           <div className="flex">
             <h6 className="text-white text-lg font-semibold normal-case">
