@@ -75,6 +75,50 @@ class CardsViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user, n_in_series=n_in_series)
 
     @action(detail=False, methods=['GET'])
+    def get_home_info(self, request):
+        cards_total_by_tags = {}
+        cardset = Card.objects.filter(owner=request.user)
+
+        for card in cardset:
+            card_score = 0
+            try:
+                card_score_obj = CardScore.objects.get(
+                    card=card.id,
+                    owner=request.user
+                )
+                last_revision_date = card_score_obj.last_revised_at
+                card_score = card_score_obj.score
+            except CardScore.DoesNotExist:
+                last_revision_date = card.created_at
+            days_passed = (
+                datetime.datetime.now(tz=pytz.UTC) - last_revision_date
+            ).days
+
+            eligible_for_revision = card_score < days_passed and days_passed > 0
+
+            if card.tags_set_str not in cards_total_by_tags:
+                cards_total_by_tags[card.tags_set_str] = {}
+                cards_total_by_tags[card.tags_set_str]['total'] = 1
+                cards_total_by_tags[card.tags_set_str]['to_revise'] = (
+                    1 if eligible_for_revision else 0
+                )
+            else:
+                cards_total_by_tags[card.tags_set_str]['total'] += 1
+                cards_total_by_tags[card.tags_set_str]['to_revise'] += (
+                    1 if eligible_for_revision else 0
+                )
+
+        recommendations = {}
+        for tags_set_str, obj in cards_total_by_tags.items():
+            if obj['total'] / obj['to_revise'] > 1:
+                recommendations[obj['total'] / obj['to_revise']] = tags_set_str
+
+        return Response({
+            'cards_total': cardset.count(),
+            'recommendations': dict(sorted(recommendations.items())).values()
+        })
+
+    @action(detail=False, methods=['GET'])
     def get_cardset_and_statistics_by_query_params(self, request):
         cardset = get_cardset_by_query_params(
             request.query_params,

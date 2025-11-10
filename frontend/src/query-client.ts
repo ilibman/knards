@@ -176,6 +176,26 @@ export function getCardPartialsForCardQueryOptions(
   });
 }
 
+export function getHomeInfo(accessToken: string) {
+  return queryOptions({
+    queryKey: ['home_info'],
+    queryFn: async (meta) => {
+      const response = await api.get<any>(
+        'api/cards/cards/get_home_info/',
+        {
+          headers: {
+            Authorization: `JWT ${accessToken}`
+          },
+          withCredentials: true,
+          signal: meta.signal
+        }
+      );
+    
+      return response.data;
+    }
+  });
+}
+
 export async function createNewCard(
   accessToken: string,
   cardData: Partial<Card>
