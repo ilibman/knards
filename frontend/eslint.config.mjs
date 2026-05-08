@@ -64,6 +64,7 @@ export default tseslint.config(
       // React 17+ / JSX transform
       'react/react-in-jsx-scope': 'off',
       'react/jsx-uses-react': 'off',
+      'react/jsx-key': 'error',
 
       // TypeScript quality
       '@typescript-eslint/no-unused-vars': [
@@ -87,6 +88,9 @@ export default tseslint.config(
 
       // Usually too noisy in React apps
       '@typescript-eslint/no-empty-function': 'off',
+
+      // Both Array<Type> and Type[] are fine
+      '@typescript-eslint/array-type': 'off',
 
       // General JS hygiene
       'no-console': ['warn', { allow: ['warn', 'error'] }],
