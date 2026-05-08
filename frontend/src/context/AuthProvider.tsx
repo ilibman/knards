@@ -9,13 +9,14 @@ import {
 } from 'react';
 import api from '../api';
 
+interface AuthTokens {
+  access: string;
+  refresh: string;
+}
+
 interface AuthContextType {
-  authTokens: {
-    access: string;
-  };
-  setAuthTokens: Dispatch<SetStateAction<{
-    access: string;
-  } | null>>;
+  authTokens: AuthTokens | null;
+  setAuthTokens: Dispatch<SetStateAction<AuthTokens | null>>;
   userId: number;
   setUserId: Dispatch<SetStateAction<number | null>>;
   logout: () => void;
@@ -45,11 +46,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (loading) {
-      refreshToken();
+      if (authTokens?.refresh) {
+        refreshToken();
+      } else {
+        setLoading(false);
+      }
     }
 
     const intervalId = setInterval(() => {
-      if (authTokens) {
+      if (authTokens?.refresh) {
         refreshToken();
       }
     }, 1000 * 60 * 4);
@@ -57,12 +62,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [authTokens, loading]);
 
   async function refreshToken() {
+    if (!authTokens?.refresh) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.post(
         'auth/jwt/refresh/',
-        JSON.stringify({
-          refresh: authTokens?.refresh
-        }),
+        {
+          refresh: authTokens.refresh
+        },
         {
           headers: {
             'Content-Type': 'application/json'
@@ -70,13 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           withCredentials: true
         }
       );
-      
-      setAuthTokens(response.data);
-      localStorage.setItem('authTokens', JSON.stringify(authTokens));
 
-      if (loading) {
-        setLoading(false);
-      }
+      setAuthTokens(response.data);
+      localStorage.setItem('authTokens', JSON.stringify(response.data));
     } catch (error: any) {
       if (!error.response) {
         console.error('No server response');

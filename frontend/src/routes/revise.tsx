@@ -46,7 +46,7 @@ export default function Revise() {
         `api/cards/card-partials/?card=${cardId}`,
         {
           headers: {
-            Authorization: `JWT ${authTokens.access}`
+            Authorization: `JWT ${authTokens?.access}`
           },
           withCredentials: true
         }
@@ -229,7 +229,7 @@ export default function Revise() {
           { score: newScore },
           {
             headers: {
-              Authorization: `JWT ${authTokens.access}`,
+              Authorization: `JWT ${authTokens?.access}`,
               'X-CSRFToken': document.cookie.replace(
                 /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
               )
@@ -246,7 +246,7 @@ export default function Revise() {
           },
           {
             headers: {
-              Authorization: `JWT ${authTokens.access}`,
+              Authorization: `JWT ${authTokens?.access}`,
               'X-CSRFToken': document.cookie.replace(
                 /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, "$1"
               )

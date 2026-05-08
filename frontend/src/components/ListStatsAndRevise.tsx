@@ -53,7 +53,7 @@ const ListStatsAndRevise = (
             + `get_cardset_and_statistics_by_query_params/?${flattenedParams}`,
           {
             headers: {
-              Authorization: `JWT ${authTokens.access}`
+              Authorization: `JWT ${authTokens?.access}`
             },
             withCredentials: true
           }

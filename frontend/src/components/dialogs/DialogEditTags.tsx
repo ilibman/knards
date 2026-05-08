@@ -94,7 +94,7 @@ export default function DialogEditTags(props: Props) {
     setTypedInTag('');
 
     createNewTagMutation.mutate({
-      accessToken: authTokens.access,
+      accessToken: authTokens?.access ?? '',
       tagName: typedInTag
     }, {
       onSuccess(createdTag: Tag) {

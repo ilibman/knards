@@ -64,7 +64,7 @@ export default function DialogReorderCardsInSeries(props: Props) {
           `api/cards/card-partials/?card=${cardId}`,
           {
             headers: {
-              Authorization: `JWT ${authTokens.access}`
+              Authorization: `JWT ${authTokens?.access}`
             },
             withCredentials: true
           }

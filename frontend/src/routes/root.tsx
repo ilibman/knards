@@ -16,7 +16,8 @@ export default function Root() {
     data: homeInfo,
     isLoading: isHomeInfoLoading,
   } = useQuery({
-    ...getHomeInfo(authTokens.access)
+    ...getHomeInfo(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   return (

@@ -41,7 +41,8 @@ export default function New() {
     isLoading: isCardSeriesQueryLoading,
     refetch: refetchCardSeries
   } = useQuery({
-    ...getCardSeriesQueryOptions(authTokens.access)
+    ...getCardSeriesQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   const {
@@ -50,7 +51,8 @@ export default function New() {
     isFetched: isTagsQueryLoaded,
     refetch: refetchTags
   } = useQuery({
-    ...getTagsQueryOptions(authTokens.access)
+    ...getTagsQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   const {
@@ -108,7 +110,7 @@ export default function New() {
       });
 
     createNewCardMutation({
-      accessToken: authTokens.access,
+      accessToken: authTokens?.access ?? '',
       cardData: cardToSave
     }, {
       onSuccess: async (responseData: Card) => {
@@ -132,7 +134,7 @@ export default function New() {
       // save partials
       cardPartials.forEach(async (_, i) => {
         createNewCardPartialMutation({
-          accessToken: authTokens.access,
+          accessToken: authTokens?.access ?? '',
           cardPartialData: {
             ..._,
             card: card.id,

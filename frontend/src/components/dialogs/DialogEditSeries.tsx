@@ -55,7 +55,7 @@ export default function DialogEditSeries(props: Props) {
   function saveChanges() {
     if (isNewSeries) {
       createNewCardSeriesMutation.mutate({
-        accessToken: authTokens.access,
+        accessToken: authTokens?.access ?? '',
         seriesName: cardSeriesName
       }, {
         onSuccess(responseData: CardSeries) {

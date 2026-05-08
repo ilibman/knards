@@ -65,8 +65,8 @@ export default function Edit() {
     isLoading: isCardQueryLoading,
     isFetched: isCardQueryLoaded
   } = useQuery({
-    ...getCardQueryOptions(authTokens.access, +id!),
-    enabled: !!id
+    ...getCardQueryOptions(authTokens?.access ?? '', +id!),
+    enabled: !!authTokens?.access && !!id
   });
 
   const {
@@ -74,7 +74,8 @@ export default function Edit() {
     refetch: refetchCardSeries,
     isLoading: isCardSeriesQueryLoading
   } = useQuery({
-    ...getCardSeriesQueryOptions(authTokens.access)
+    ...getCardSeriesQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   const {
@@ -83,7 +84,8 @@ export default function Edit() {
     isLoading: isTagsQueryLoading,
     isFetched: isTagsQueryLoaded
   } = useQuery({
-    ...getTagsQueryOptions(authTokens.access)
+    ...getTagsQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   const {
@@ -91,8 +93,8 @@ export default function Edit() {
     isLoading: isCardPartialsQueryLoading,
     isFetched: isCardPartialsQueryLoaded
   } = useQuery({
-    ...getCardPartialsForCardQueryOptions(authTokens.access, +id!),
-    enabled: !!id
+    ...getCardPartialsForCardQueryOptions(authTokens?.access ?? '', +id!),
+    enabled: !!authTokens?.access && !!id
   });
 
   const {
@@ -229,7 +231,7 @@ export default function Edit() {
         `api/cards/cards/get_cards_from_series/?series=${seriesId}`,
         {
           headers: {
-            Authorization: `JWT ${authTokens.access}`
+            Authorization: `JWT ${authTokens?.access}`
           },
           withCredentials: true
         }
@@ -304,7 +306,7 @@ export default function Edit() {
   async function saveChanges() {
     // save card metadata
     updateCardMutation({
-      accessToken: authTokens.access,
+      accessToken: authTokens?.access ?? '',
       cardId: card!.id,
       cardData: card!
     }, {
@@ -312,7 +314,7 @@ export default function Edit() {
         if (isCardInSeriesOrderChanged) {
           // save card order in series
           reorderCardsInSeriesMutation({
-            accessToken: authTokens.access,
+            accessToken: authTokens?.access ?? '',
             cardsFromSeries
           });
         }
@@ -330,7 +332,7 @@ export default function Edit() {
           cardPartials.forEach(async (_, i) => {
             if (!_.id) {
               createNewCardPartialMutation({
-                accessToken: authTokens.access,
+                accessToken: authTokens?.access ?? '',
                 cardPartialData: {
                   ..._,
                   position: i + 1
@@ -352,7 +354,7 @@ export default function Edit() {
               });
             } else {
               updateCardPartialMutation({
-                accessToken: authTokens.access,
+                accessToken: authTokens?.access ?? '',
                 cardPartialId: _.id,
                 cardPartialData: {
                   ..._,
@@ -362,7 +364,7 @@ export default function Edit() {
                 onSuccess: async () => {
                   partialsToDeleteIds.forEach(async (_) => {
                     deleteCardPartialMutation({
-                      accessToken: authTokens.access,
+                      accessToken: authTokens?.access ?? '',
                       cardPartialId: _
                     });
                   });

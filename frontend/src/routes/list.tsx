@@ -57,14 +57,16 @@ export default function List() {
     hasNextPage,
     isFetchingNextPage
   } = useInfiniteQuery({
-    ...getCardsQueryOptions(authTokens.access, params)
+    ...getCardsQueryOptions(authTokens?.access ?? '', params),
+    enabled: !!authTokens?.access
   });
 
   const {
     data: cardSeries,
     isLoading: isCardSeriesQueryLoading,
   } = useQuery({
-    ...getCardSeriesQueryOptions(authTokens.access)
+    ...getCardSeriesQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   const {
@@ -72,14 +74,16 @@ export default function List() {
     isFetching: isTagsQueryLoading,
     refetch: refetchTags
   } = useQuery({
-    ...getTagsQueryOptions(authTokens.access)
+    ...getTagsQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access
   });
 
   const {
     data: cardPartials,
     isFetching: isCardPartialsQueryLoading
   } = useQuery({
-    ...getCardPartialsQueryOptions(authTokens.access),
+    ...getCardPartialsQueryOptions(authTokens?.access ?? ''),
+    enabled: !!authTokens?.access,
     select: (result) => {
       const cardPartialsMap: Record<number, Array<CardPartial>> = {};
       result.forEach((_) => {
