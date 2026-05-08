@@ -9,7 +9,7 @@ export default function Login() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname ?? '/';
 
   const loginRef = useRef();
   const errorRef = useRef();
@@ -43,7 +43,7 @@ export default function Login() {
           withCredentials: true
         }
       );
-      
+
       setAuthTokens(response.data);
       setUserId(jwtDecode(response.data.access).user_id);
       localStorage.setItem('authTokens', JSON.stringify(response.data));
