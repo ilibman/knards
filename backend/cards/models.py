@@ -22,8 +22,8 @@ class CardSeries(models.Model):
 
     class Meta:
         verbose_name_plural = 'card series'
-    
-    
+
+
 class Tag(models.Model):
     name = models.CharField(
         max_length=50,
@@ -74,7 +74,7 @@ class Card(models.Model):
         # custom logic handlers
 
         super(Card, self).save(*args, **kwargs)
-    
+
     def __str__(self):
         return (
             f'{self.pk} / '
@@ -151,4 +151,9 @@ class CardScore(models.Model):
     last_revised_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('card', 'owner')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner', 'card'],
+                name='unique_card_score_per_user_card',
+            ),
+        ]

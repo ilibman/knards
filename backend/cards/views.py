@@ -31,7 +31,7 @@ class CardSeriesViewSet(viewsets.ModelViewSet):
         if card:
             card = Card.objects.get(pk=card_id)
             queryset = queryset.filter(pk=card.card_series.id)
-            
+
         return queryset.order_by('name')
 
     def perform_create(self, serializer):
@@ -48,7 +48,7 @@ class TagsViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     queryset = Tag.objects.order_by('name')
     lookup_field = 'pk'
-    
+
 class CardsViewSet(viewsets.ModelViewSet):
     serializer_class = CardSerializer
     permission_classes = [
@@ -126,6 +126,14 @@ class CardsViewSet(viewsets.ModelViewSet):
             request.query_params,
             request.user
         )
+        card_scores = CardScore.objects.filter(
+            owner=request.user,
+            card__in=cardset
+        )
+        scores_to_cards_map = {
+            score.card_id: score
+            for score in card_scores
+        }
 
         modified_cardset = []
         cards_total_by_tags = {}
@@ -149,19 +157,17 @@ class CardsViewSet(viewsets.ModelViewSet):
                     series_total_cards_count[series_name] += 1
                 else:
                     series_total_cards_count[series_name] = 1
-            
+
             card_score = 0
-            try:
-                card_score_obj = CardScore.objects.get(
-                    card=card.id,
-                    owner=request.user
-                )
+
+            card_score_obj = scores_to_cards_map.get(card.id)
+            if card_score_obj:
                 last_revision_date = card_score_obj.last_revised_at
                 card_score = card_score_obj.score
 
                 modified_card['score_id'] = card_score_obj.pk
                 modified_card['score'] = card_score
-            except CardScore.DoesNotExist:
+            else:
                 last_revision_date = card.created_at
 
                 modified_card['score_id'] = None
@@ -190,9 +196,9 @@ class CardsViewSet(viewsets.ModelViewSet):
                 cards_total_by_tags[card.tags_set_str]['to_revise'] += (
                     1 if eligible_for_revision else 0
                 )
-        
+
         global_tag_strs = {}
-        
+
         # count how many times each tag appears throughout the key-value pairs
         tag_counts = Counter(
             tag.strip()
@@ -210,7 +216,7 @@ class CardsViewSet(viewsets.ModelViewSet):
                     global_tag_strs[tag]['total'] += values.get('total', 0)
                     global_tag_strs[tag]['to_revise'] \
                         += values.get('to_revise', 0)
-        
+
         cards_total_by_tags.update(global_tag_strs)
         cards_total_by_tags \
             = {k: cards_total_by_tags[k] for k in sorted(cards_total_by_tags)}
@@ -275,7 +281,7 @@ class CardPartialsViewSet(viewsets.ModelViewSet):
             for _ in cards:
                 q |= Q(card=_)
             queryset = queryset.filter(q)
-            
+
         return queryset.order_by('position')
 
 class CardScoresViewSet(viewsets.ModelViewSet):
@@ -293,7 +299,7 @@ class CardScoresViewSet(viewsets.ModelViewSet):
                 card=card,
                 owner=self.request.user
             )
-            
+
         return queryset.order_by('pk')
 
     def perform_create(self, serializer):
@@ -323,7 +329,7 @@ def get_cardset_by_query_params(query_params, owner):
                     cardset = cardset.filter(tags=tag)
                 else:
                     cardset &= cardset.filter(tags=tag)
-    
+
     return cardset.distinct()
 
 def cardset_randomize_and_group_by_weights_and_series(cardset):

@@ -31,7 +31,7 @@ class CardPartialSerializer(serializers.ModelSerializer):
 
 class CardScoreSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
-    
+
     class Meta:
         model = CardScore
         fields = '__all__'

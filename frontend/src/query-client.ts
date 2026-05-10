@@ -19,10 +19,10 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: Infinity,
       // staleTime: 1 * 60 * 1000, // cache the data for 1 min
-      // gcTime: Infinity,
-      // refetchOnWindowFocus: false,
-      // refetchOnMount: 'always',
-      // refetchOnReconnect: false,
+      gcTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
     },
     mutations: {}
   },
