@@ -151,10 +151,14 @@ if django_debug:
     CSRF_TRUSTED_ORIGINS = [
         'https://www.knards.com', 'https://knards.com', 'http://localhost:5173'
     ]
-    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = [
+        'https://www.knards.com', 'https://knards.com', 'http://localhost:5173'
+    ]
 else:
     CSRF_TRUSTED_ORIGINS = []
-    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        'https://www.knards.com', 'https://knards.com'
+    ]
 CORS_ALLOW_CREDENTIALS=True
 
 AUTH_USER_MODEL = 'accounts.User'
