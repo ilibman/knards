@@ -14,6 +14,7 @@ import { AuthProvider } from './context/AuthProvider';
 import RequireAuth from './components/RequireAuth';
 import Root from './routes/root';
 import ErrorPage from './error-page';
+import Intro from './routes/intro';
 import Registration from './routes/registration';
 import Activation from './routes/activation';
 import Login from './routes/login';
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
     element: <Root />,
     errorElement: <ErrorPage />,
     children: [
+      {
+        path: 'zivotopis',
+        element: <Intro />,
+      },
       {
         path: 'registration',
         element: <Registration />,

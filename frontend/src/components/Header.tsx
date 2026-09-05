@@ -26,7 +26,7 @@ export default function Header() {
 
   return (
     <header className={`
-      ${pathname === '/registration' || pathname === '/login' || pathname === '/activate' ? 'hidden' : ''}
+      ${pathname === '/zivotopis' || pathname === '/registration' || pathname === '/login' || pathname === '/activate' ? 'hidden' : ''}
     `}>
       <nav aria-label="Global">
         <div className="flex justify-end my-2 mx-3 md:hidden">
