@@ -5,5 +5,5 @@ from .serializers import UserSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    queryset = get_user_model().objects.order_by('pk')
+    queryset = get_user_model().objects.prefetch_related('card_series').order_by('pk')
     lookup_field = 'pk'
