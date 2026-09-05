@@ -5,6 +5,7 @@ export default function Intro() {
     <>
       {/* MOBILE VERSION */}
       <div className="intro-section mobile-version">
+        <p>Otevři mě na PC prosím^^</p>
       </div>
 
       {/* DESKTOP VERSION */}
@@ -24,6 +25,13 @@ export default function Intro() {
           <div>
             <h3 className="font-bold">2018+</h3>
             <p>Andrijko hraje v 350 kapelách.</p>
+          </div>
+          <div className="arrow-to-dobro">
+          </div>
+          <div className="arrow-to-dobro-down">
+          </div>
+          <div className="to-dobro-arr">
+            <div className="cover-arr"></div>
           </div>
         </div>
         <div className="col2">

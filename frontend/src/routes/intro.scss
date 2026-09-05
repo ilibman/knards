@@ -1,6 +1,14 @@
 .intro-section {
   &.mobile-version {
     display: none;
+
+    p {
+      margin: 40px;
+      padding: 20px;
+      background-color: var(--color-white);
+      border: 1px solid var(--color-black);
+      box-shadow: 0 2px 2px -1px var(--color-black);
+    }
   }
 
   &.desktop-version {
@@ -86,7 +94,7 @@
         grid-column: 3 / 6;
       }
 
-      & > div:not(.arrow-down):not(.to-dole-arr):not(.arrow-down1):not(.arrow-down2):not(.to-dole-arr1):not(.to-dole-arr2):not(.arrow-right):not(.to-right-arr):not(.arrow-down3):not(.to-dole-arr3):not(.stem-up1):not(.stem-up2):not(.stem-into-music):not(.to-empty-arr):not(.stem-right):not(.stem-down) {
+      & > div:not(.arrow-down):not(.to-dole-arr):not(.arrow-down1):not(.arrow-down2):not(.to-dole-arr1):not(.to-dole-arr2):not(.arrow-right):not(.to-right-arr):not(.arrow-down3):not(.to-dole-arr3):not(.stem-up1):not(.stem-up2):not(.stem-into-music):not(.to-empty-arr):not(.stem-right):not(.stem-down):not(.arrow-to-dobro):not(.to-dobro-arr):not(.arrow-to-dobro-down) {
         position: relative;
         margin: 0 0 40px;
         padding: 20px;
@@ -236,7 +244,7 @@
       z-index: 2;
     }
 
-    .to-dole-arr, .to-dole-arr1, .to-dole-arr2, .to-dole-arr3, .to-empty-arr {
+    .to-dole-arr, .to-dole-arr1, .to-dole-arr2, .to-dole-arr3, .to-empty-arr, .to-dobro-arr {
       position: absolute;
       bottom: 10px;
       left: 50%;
@@ -298,7 +306,7 @@
     .arr-to-2016 {
       position: relative;
       overflow: hidden;
-      z-index: 10;
+      z-index: 9;
       background-color: var(--color-brown);
     }
 
@@ -474,14 +482,54 @@
         }
       }
     }
+
+    .music {
+      .arrow-to-dobro {
+        position: absolute;
+        top: 51%;
+        left: 100%;
+        width: 245%;
+        border-top: 10px dashed var(--color-red);
+        border-top-right-radius: 25px;
+        z-index: 10;
+      }
+      .arrow-to-dobro-down {
+        position: absolute;
+        top: 51%;
+        left: 343%;
+        width: 0;
+        height: 75px;
+        border-right: 10px dashed var(--color-red);
+        border-top-right-radius: 25px;
+        z-index: 10;
+      }
+      .to-dobro-arr {
+        left: 344%;
+        top: 54.8%;
+      }
+      @media (max-width: 1880px) {
+        .to-dobro-arr {
+          left: 344.3%;
+        }
+      }
+      @media (max-width: 1780px) {
+        .arrow-to-dobro-down {
+          height: 52px;
+        }
+        .to-dobro-arr {
+          top: 52.7%;
+          left: 344.6%;
+        }
+      }
+    }
   }
 
   @media (max-width: 767px) {
-    .mobile-version {
+    &.mobile-version {
       display: flex;
     }
 
-    .desktop-version {
+    &.desktop-version {
       display: none;
     }
   }
