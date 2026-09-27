@@ -89,6 +89,10 @@ h6 {
   text-transform: uppercase;
 }
 
+#root {
+  height: 100%;
+}
+
 .offscreen {
   position: absolute;
   left: -9999px;
@@ -171,9 +175,6 @@ h6 {
 
 .dialog-edit-series,
 .dialog-edit-tags {
-  height: calc(100vh - 2.5rem);
-  width: calc(100vw - 2.5rem);
-
   .dialog-close-btn {
     &:hover {
       svg {

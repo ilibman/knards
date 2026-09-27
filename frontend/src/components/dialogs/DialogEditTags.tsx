@@ -150,7 +150,7 @@ export default function DialogEditTags(props: Props) {
           className="fixed z-[998] bg-black opacity-80 inset-0"
         />
         <Dialog.Content
-          className="fixed z-[999] top-5 left-5
+          className="fixed z-[999] top-5 right-5 bottom-5 left-5
             border-2 rounded
             overflow-y-hidden
             bg-brown-light
